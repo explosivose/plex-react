@@ -1,4 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
+import logdown from "logdown";
+
+const logger = logdown('plex-react:plex-api');
 
 export interface PlexApiOptions {
   baseURL: string;
@@ -20,10 +23,15 @@ export class PlexApi {
     username,
     password,
   }: PlexApiOptions) {
+    if (!baseURL.toLocaleLowerCase().startsWith('http://') || !baseURL.toLocaleLowerCase().startsWith('https://')) {
+      baseURL = `http://${baseURL}`;
+    }
+    logger.debug('PlexApi instance created.', baseURL);
     this._axios = axios.create({
       baseURL,
       headers: {
         'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
         'X-Plex-Product': plexProduct,
         'X-Plex-Version': plexVersion,
         'X-Plex-Client-Identifier': clientId,
@@ -37,13 +45,17 @@ export class PlexApi {
     })
   }
   async fetch (url: string): Promise<AxiosResponse> {
+    logger.debug('fetch ', url);
     return this._axios.request({
+      method: 'GET',
       url,
       headers: {
         ...this._authToken ? {'X-Plex-Token': this._authToken} : {}
-      }
+      },
     })
   }
 }
+
+export const createPlexApi = (opts: PlexApiOptions): PlexApi => new PlexApi(opts); 
 
 export default PlexApi;
