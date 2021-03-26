@@ -8,7 +8,7 @@ import { AxiosResponseViewer } from './AxiosResponseViewer/AxiosResponseViewer';
 
 const logger = logdown('plex-react:plex-react-test')
 const defaultPlexOpts: PlexApiOptions = {
-  baseURL: 'localhost:32400',
+  baseUrl: 'localhost:32400',
   plexProduct: 'Plex React',
   plexVersion: '1.0.0',
   clientId: '4e0a79ff-1688-4427-91ae-62383e4d6277'
@@ -27,9 +27,7 @@ export const PlexReactTest: FC<Props> = ({
 }) => {
   const [plex, setPlex] = useState(createPlexApi({
     ...defaultPlexOpts,
-    baseURL: plexUrl,
-    username: plexUsername,
-    password: plexPassword,
+    baseUrl: plexUrl,
   }));
 
 
@@ -45,14 +43,25 @@ export const PlexReactTest: FC<Props> = ({
     setData(undefined);
     setPlex(createPlexApi({
       ...defaultPlexOpts,
-      baseURL: plexUrl,
-      username: plexUsername,
-      password: plexPassword,
+      baseUrl: plexUrl,
     }))
   }, [
     plexUrl,
     plexPassword,
     plexUsername
+  ])
+  
+  useEffect(() => {
+    async function auth(usr: string, pwd: string) {
+      await plex.auth();
+    }
+    if (plexUsername && plexPassword) {
+      auth(plexUsername, plexPassword);
+    }
+  }, [
+    plex,
+    plexUsername,
+    plexPassword
   ])
 
   const testA = () => {
