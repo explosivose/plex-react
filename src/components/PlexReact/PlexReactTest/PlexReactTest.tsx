@@ -1,88 +1,23 @@
-import { Box, Button, Input, Spinner, FormLabel } from '@chakra-ui/react';
-import { AxiosError, AxiosResponse } from 'axios';
-import logdown from 'logdown';
-import React, { FC, useEffect, useState } from 'react';
-import { createPlexApi, PlexApiOptions } from '../../../services/plex-api';
-import { AxiosErrorViewer } from './AxiosErrorViewer/AxiosErrorViewer';
+import { Box, Input, Spinner, FormLabel } from '@chakra-ui/react';
+import React, { FC, useContext, useState } from 'react';
+import { useQuery } from 'react-query';
+import { plexRequest } from '../../../services/plex-api';
+import { PlexAuthContext } from '../PlexAuthProvider/PlexAuthProvider';
 import { AxiosResponseViewer } from './AxiosResponseViewer/AxiosResponseViewer';
-
-const logger = logdown('plex-react:plex-react-test')
-const defaultPlexOpts: PlexApiOptions = {
-  baseUrl: 'localhost:32400',
-  plexProduct: 'Plex React',
-  plexVersion: '1.0.0',
-  clientId: '4e0a79ff-1688-4427-91ae-62383e4d6277'
-}
 
 interface Props {
   plexUrl: string;
-  plexUsername?: string;
-  plexPassword?: string;
 }
 
 export const PlexReactTest: FC<Props> = ({
   plexUrl,
-  plexPassword,
-  plexUsername,
 }) => {
-  const [plex, setPlex] = useState(createPlexApi({
-    ...defaultPlexOpts,
-    baseUrl: plexUrl,
-  }));
 
 
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<AxiosResponse>();
-  const [error, setError] = useState<AxiosError>();
   const [route, setRoute] = useState('/');
+  const { authToken } = useContext(PlexAuthContext);
+  const { isLoading, data } = useQuery('testQuery', plexRequest({authToken}))
 
-  useEffect(() => {
-    logger.debug('plex settings changed. trigger effect.');
-    setError(undefined);
-    setLoading(false);
-    setData(undefined);
-    setPlex(createPlexApi({
-      ...defaultPlexOpts,
-      baseUrl: plexUrl,
-    }))
-  }, [
-    plexUrl,
-    plexPassword,
-    plexUsername
-  ])
-  
-  useEffect(() => {
-    async function auth(usr: string, pwd: string) {
-      await plex.auth();
-    }
-    if (plexUsername && plexPassword) {
-      auth(plexUsername, plexPassword);
-    }
-  }, [
-    plex,
-    plexUsername,
-    plexPassword
-  ])
-
-  const testA = () => {
-    logger.debug('test started');
-    setLoading(true);
-    setData(undefined);
-    setError(undefined);
-    plex.fetch(route)
-      .then(data => {
-        logger.debug('test completed');
-        setData(data);
-        setError(undefined);
-        setLoading(false);
-      })
-      .catch(err => {
-        logger.debug('test error');
-        setError(err);
-        setData(undefined);
-        setLoading(false);
-      })
-  }
 
   return (
     <Box>
@@ -91,14 +26,11 @@ export const PlexReactTest: FC<Props> = ({
         defaultValue={route}
         onChange={(e) => setRoute(e.currentTarget.value)}
       />
-      {loading 
+      {isLoading 
         ? <Spinner />
         : <Box>
-            <Button onClick={testA}>Test</Button>
             {data && <AxiosResponseViewer data={data} />}
-            {error && <AxiosErrorViewer error={error} />}
           </Box>}
     </Box>
   )
 }
-
