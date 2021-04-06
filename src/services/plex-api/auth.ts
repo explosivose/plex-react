@@ -1,12 +1,7 @@
-import axios, { AxiosResponse, Method } from "axios";
-import { Constants, PlexApi } from "../config";
+import axios from "axios";
+import { Constants, PlexApi } from "../../config";
 import { stringify } from "qs";
-
-export interface PlexBaseOptions {
-  apiUrl?: string;
-  product?: string;
-  clientId?: string;
-}
+import { PlexBaseOptions } from "./request";
 
 export interface PlexVerifyOptions extends PlexBaseOptions {
   userToken: string;
@@ -19,13 +14,6 @@ export interface PlexAuthUrlOptions extends PlexBaseOptions {
 
 export interface PlexCheckPinOptions extends PlexBaseOptions {
   id: number;
-}
-
-export interface PlexRequestOptions extends PlexBaseOptions {
-  authToken?: string;
-  endpoint?: string;
-  version?: string;
-  method?: Method;
 }
 
 // https://forums.plex.tv/t/authenticating-with-plex/609370
@@ -106,7 +94,8 @@ export const checkPin = async({
     headers: {
       'Accept': 'application/json',
       'X-Plex-Client-Identifier': clientId,
-    }
+    },
+    validateStatus: undefined,
   });
   switch (status) {
     case 200:
@@ -134,27 +123,4 @@ export const poll = async<T>(
     }
   }
   return new Promise(pollingFunction);
-}
-
-export const plexRequest = <T>({
-  authToken = 'unknown',
-  apiUrl = PlexApi.BASE_URL,
-  product = Constants.PRODUCT,
-  clientId = Constants.CLIENT_ID,
-  version = Constants.VERSION,
-  method = 'GET',
-  endpoint = '/'
-}: PlexRequestOptions): (() => Promise<AxiosResponse<T>>) => {
-  return () => axios.request<T>({
-    method,
-    baseURL: apiUrl,
-    url: endpoint,
-    headers: {
-      'Accept': 'application/json',
-      'X-Plex-Product': product,
-      'X-Plex-Version': version,
-      'X-Plex-Client-Identifier': clientId,
-      'X-Plex-Token': authToken,
-    }
-  });
-}
+};

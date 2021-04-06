@@ -13,7 +13,7 @@ export const AxiosResponseViewer: FC<Props> = ({data}) => {
         <Heading>
           {data.status}:{data.statusText}
         </Heading>
-        <Code overflowY='auto'>
+        <Code overflowY='auto' whiteSpace='pre-wrap'>
           {JSON.stringify(data.data, undefined, 2)}
         </Code>
       </Stack>

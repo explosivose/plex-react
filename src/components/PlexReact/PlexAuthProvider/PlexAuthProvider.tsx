@@ -67,19 +67,25 @@ export const PlexAuthProvider: FC = (props) => {
   // check pin is claimed by user at authentication
   useEffect(() => {
     async function pinChecker() {
+      let authToken: string | undefined = undefined;
       if (pinId !== undefined) {
         try {
-          return checkPin({id: pinId});
+          authToken = await checkPin({id: pinId});
         } catch (err: unknown) {
           logger.error(err);
         }
       } else {
         logger.warn('Cannot check pin because it is undefined.');
-        return undefined;
       }
+      return authToken;
     }
     async function pollPinCheck() {
-      const authToken = await poll(pinChecker);
+      let authToken: string | undefined = undefined;
+      try {
+        authToken = await poll(pinChecker);
+      } catch (err: unknown) {
+        logger.error(err);
+      }
       if (authToken) {
         logger.debug('Auth token recieved.');
         setUserToken(authToken);
