@@ -1,86 +1,160 @@
-import axios, { AxiosInstance, AxiosResponse } from "axios";
-import logdown from "logdown";
+import axios, { AxiosResponse, Method } from "axios";
+import { Constants, PlexApi } from "../config";
+import { stringify } from "qs";
 
-const logger = logdown('plex-react:plex-api');
-
-export interface PlexApiOptions {
-  baseUrl: string;
-  authUrl?: string;
-  plexProduct: string;
-  plexVersion: string;
-  clientId: string;
+export interface PlexBaseOptions {
+  apiUrl?: string;
+  product?: string;
+  clientId?: string;
 }
 
-type PlexApiConfig = Required<PlexApiOptions>;
+export interface PlexVerifyOptions extends PlexBaseOptions {
+  userToken: string;
+  verifyEndpoint?: string;
+}
 
-export class PlexApi {
-  private _authToken?: string;
-  private _axios: AxiosInstance;
-  private _config: PlexApiConfig;
-  constructor({
-    baseUrl,
-    authUrl = 'https://plex.tv/api/v2/pins',
-    ...opts
-  }: PlexApiOptions) {
-    this._config = {...opts, baseUrl, authUrl};
-    if (!baseUrl.toLocaleLowerCase().startsWith('http://') || !baseUrl.toLocaleLowerCase().startsWith('https://')) {
-      baseUrl = `http://${baseUrl}`;
-    }
-    if (authUrl.startsWith('http://')) {
-      logger.warn('authUrl only supports HTTPS');
-      authUrl = authUrl.replace('http://', 'https://');
-    }
-    if (!authUrl.toLocaleLowerCase().startsWith('https://')) {
-      authUrl = `https://${authUrl}`;
-    }
+export interface PlexAuthUrlOptions extends PlexBaseOptions {
+  code: string;
+}
 
-    logger.debug('PlexApi instance created.', baseUrl);
-    
-    this._axios = axios.create({
-      baseURL: baseUrl,
-      headers: {
-        'Accept': 'application/json',
-        'X-Plex-Product': opts.plexProduct,
-        'X-Plex-Version': opts.plexVersion,
-        'X-Plex-Client-Identifier': opts.clientId,
-      },
-      transformResponse: (data) => {
-        if (data?.user?.authToken) {
-          this._authToken = data.user.authToken;
-        }
-      }
-    });
-  }
-  async auth(): Promise<void> {
-    logger.debug('auth', this._config.authUrl);
-    return axios.post(this._config.authUrl, 'strong=true', {
-      headers: {
-        'Accept': 'application/json',
-        'X-Plex-Product': this._config.plexProduct,
-        'X-Plex-Version': 'Plex OAuth',
-        'X-Plex-Client-Identifier': this._config.clientId,
-        'X-Plex-Model': 'Plex OAuth'
-      }
-    })
-      .then(res => {
-        logger.debug('auth response', res.status, res.statusText, res.data);
-      })
-      .catch(err => {
-        logger.error(err);
-      });
-  }
-  async fetch (url: string): Promise<AxiosResponse> {
-    logger.debug('fetch ', url);
-    return this._axios.request({
-      method: 'GET',
-      url,
-      headers: {
-        ...this._authToken ? {'X-Plex-Token': this._authToken} : {}
-      },
-    })
+export interface PlexCheckPinOptions extends PlexBaseOptions {
+  id: number;
+}
+
+export interface PlexRequestOptions extends PlexBaseOptions {
+  authToken?: string;
+  endpoint?: string;
+  version?: string;
+  method?: Method;
+}
+
+// https://forums.plex.tv/t/authenticating-with-plex/609370
+export const verifyToken = async({
+  userToken,
+  verifyEndpoint = PlexApi.USER,
+  apiUrl = PlexApi.BASE_URL,
+  product = Constants.PRODUCT,
+  clientId = Constants.CLIENT_ID,
+}: PlexVerifyOptions): Promise<boolean> => {
+  const {status, statusText} = await axios.get(`${apiUrl}${verifyEndpoint}`, {
+    headers: {
+      'Accept': 'application/json',
+      'X-Plex-Product': product,
+      'X-Plex-Client-Identifier': clientId,
+      'X-Plex-Token': userToken
+    },
+    validateStatus: undefined,
+  });
+  switch (status) {
+    case 200:
+      return true;
+    case 401:
+      return false;
+    default:
+      throw new Error (`Error verifying token (${status}: ${statusText})`);
   }
 }
 
-export const createPlexApi = (opts: PlexApiOptions): PlexApi => new PlexApi(opts); 
+// https://forums.plex.tv/t/authenticating-with-plex/609370
+export const generatePin = async(opts: PlexBaseOptions = {
+  apiUrl: PlexApi.BASE_URL,
+  product: Constants.PRODUCT,
+  clientId: Constants.CLIENT_ID,
+}): Promise<{id: number; code: string}> => {
+  const {apiUrl, product, clientId} = opts;
+  const {data, status, statusText} = await axios.post(`${apiUrl}${PlexApi.PINS}`,
+  'strong=true', {
+    headers: {
+      'Accept': 'application/json',
+      'X-Plex-Product': product,
+      'X-Plex-Client-Identifier': clientId,
+    },
+    validateStatus: undefined,
+  });
+  switch (status) {
+    case 200:
+    case 201:
+      return {id: data.id, code: data.code};
+    default:
+      throw new Error (`Error generating pin (${status}: ${statusText})`);
+  }
+};
 
-export default PlexApi;
+// https://forums.plex.tv/t/authenticating-with-plex/609370
+export const getAuthUrl = ({
+  code,
+  apiUrl = PlexApi.AUTH_URL,
+  product = Constants.PRODUCT,
+  clientId = Constants.CLIENT_ID,
+}: PlexAuthUrlOptions): string => {
+  return `${apiUrl}#?${stringify({
+    clientID: clientId,
+    code,
+    // forwardUrl: window.location.href,
+    context: {
+      device: { product }
+    }
+  })}`;
+};
+
+export const checkPin = async({
+  id,
+  apiUrl = PlexApi.BASE_URL,
+  clientId = Constants.CLIENT_ID
+}: PlexCheckPinOptions): Promise<string | undefined> => {
+  const {data, status, statusText} = await axios.get(`${apiUrl}${PlexApi.PINS}/${id}`, {
+    headers: {
+      'Accept': 'application/json',
+      'X-Plex-Client-Identifier': clientId,
+    }
+  });
+  switch (status) {
+    case 200:
+      return data?.authToken ?? undefined;
+    default:
+      throw new Error(`Error checking pin (${status}: ${statusText})`);
+  }
+};
+
+export const poll = async<T>(
+  fn: () => Promise<T>,
+  interval = 1000,
+  timeout = 10 * 1000,
+  validate = (result: T) => result !== undefined && result !== null,
+): Promise<T> => {
+  const endTime = new Date().getTime() + timeout;
+  const pollingFunction = async(resolve: (value: T) => void, reject: (reason?: unknown) => void) => {
+    const result = await fn();
+    if (validate(result)) {
+      return resolve(result);
+    } else if (new Date().getTime() < endTime) {
+      setTimeout(pollingFunction, interval, resolve, reject);
+    } else {
+      reject(new Error('Timeout reached while polling...'));
+    }
+  }
+  return new Promise(pollingFunction);
+}
+
+export const plexRequest = <T>({
+  authToken = 'unknown',
+  apiUrl = PlexApi.BASE_URL,
+  product = Constants.PRODUCT,
+  clientId = Constants.CLIENT_ID,
+  version = Constants.VERSION,
+  method = 'GET',
+  endpoint = '/'
+}: PlexRequestOptions): (() => Promise<AxiosResponse<T>>) => {
+  return () => axios.request<T>({
+    method,
+    baseURL: apiUrl,
+    url: endpoint,
+    headers: {
+      'Accept': 'application/json',
+      'X-Plex-Product': product,
+      'X-Plex-Version': version,
+      'X-Plex-Client-Identifier': clientId,
+      'X-Plex-Token': authToken,
+    }
+  });
+}

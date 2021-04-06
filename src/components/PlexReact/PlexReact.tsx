@@ -1,6 +1,7 @@
 import React, { FC, useState } from 'react';
 import { SettingsForm } from './SettingsForm/SettingsForm';
 import { PlexReactTest } from './PlexReactTest/PlexReactTest'
+import { PlexAuthProvider } from './PlexAuthProvider/PlexAuthProvider';
 
 export const PlexReact: FC = () => {
 
@@ -9,22 +10,22 @@ export const PlexReact: FC = () => {
   const [plexPassword, setPlexPassword] = useState<string>();
 
   return (
-    <div>
-      <SettingsForm
-        plexUrl={plexUrl}
-        plexPassword={plexPassword}
-        plexUsername={plexUsername}
-        setPlexUrl={setPlexUrl}
-        setPlexPassword={setPlexPassword}
-        setPlexUsername={setPlexUsername}
-      />
-      {plexUrl !== undefined && (
-        <PlexReactTest
+    <PlexAuthProvider>
+      <div>
+        <SettingsForm
           plexUrl={plexUrl}
           plexPassword={plexPassword}
           plexUsername={plexUsername}
+          setPlexUrl={setPlexUrl}
+          setPlexPassword={setPlexPassword}
+          setPlexUsername={setPlexUsername}
         />
-      )}
-    </div>
+        {plexUrl !== undefined && (
+          <PlexReactTest
+            plexUrl={plexUrl}
+          />
+        )}
+      </div>
+    </PlexAuthProvider>
   )
 }
