@@ -42,8 +42,9 @@ const H_RESIZE_CONTAINER_PROPS: BoxProps = {
 }
 
 const RESIZE_HANDLE_SIZE = 3;
-const RESIZE_HANDLE_COLOR = "#0FFF";
-const RESIZE_HANDLE_COLOR_HOVER = "#8000";
+// TODO get colors from chakra theme
+const RESIZE_HANDLE_COLOR = "#0FFFFFF";
+const RESIZE_HANDLE_COLOR_HOVER = "#08000000";
 const V_HANDLE_PROPS: BoxProps = {
   width: RESIZE_HANDLE_SIZE,
   marginRight: -1,
@@ -54,6 +55,7 @@ const V_HANDLE_PROPS: BoxProps = {
   borderRightColor: RESIZE_HANDLE_COLOR,
   cursor: "col-resize",
   _hover: {
+    transition: "all 1s ease",
     borderLeftColor: RESIZE_HANDLE_COLOR_HOVER,
     borderRightColor: RESIZE_HANDLE_COLOR_HOVER
   }
@@ -68,6 +70,7 @@ const H_HANDLE_PROPS: BoxProps = {
   borderBottomColor: RESIZE_HANDLE_COLOR,
   cursor: "row-resize",
   _hover: {
+    transition: "all 1s ease",
     borderTopColor: RESIZE_HANDLE_COLOR_HOVER,
     borderBottomColor: RESIZE_HANDLE_COLOR_HOVER
   }
@@ -131,18 +134,18 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
   }, [onStart]);
 
   const onMove = useCallback((position: number) => {
-    // FIXME this appears to be calculating the wrong sizes or positions...
     if (resizeActive && resizeEnabled) {
       if (frameOne.current && frameTwo.current) {
         const { width, height } = frameOne.current.getBoundingClientRect();
         const size = splitDirection === SplitDirection.Vertical
           ? width : height;
-        const positionDelta = position - resizePosition;
-        let sizeDelta = positionDelta;
+        const positionDelta = resizePosition - position;
+        let sizeDelta = size - position;
         // if frames are flex items and have been arranged in a different order
         const frameOneOrder = window.getComputedStyle(frameOne.current).order;
         const frameTwoOrder = window.getComputedStyle(frameTwo.current).order;
         if (frameOneOrder > frameTwoOrder) {
+          logger.debug('swapped size delta due to order of flex frames');
           sizeDelta = -sizeDelta;
         }
         setResizePosition(position - positionDelta);
@@ -209,6 +212,7 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
         onTouchStart={onTouchStart}
         onMouseDown={onMouseDown}
         onTouchEnd={onMouseUp}
+        // TODO disabled styling
         {...splitDirection === SplitDirection.Vertical
           ? V_HANDLE_PROPS
           : H_HANDLE_PROPS}
