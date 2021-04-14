@@ -6,6 +6,7 @@ import React, {
   FC,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -43,10 +44,11 @@ const H_RESIZE_CONTAINER_PROPS: BoxProps = {
 
 const RESIZE_HANDLE_SIZE = 3;
 // TODO get colors from chakra theme
-const RESIZE_HANDLE_COLOR = "#0FFFFFF";
-const RESIZE_HANDLE_COLOR_HOVER = "#08000000";
+const RESIZE_HANDLE_COLOR = "#EEEEEEEE";
+const RESIZE_HANDLE_COLOR_HOVER = "#222222EE";
 const V_HANDLE_PROPS: BoxProps = {
   width: RESIZE_HANDLE_SIZE,
+  minWidth: RESIZE_HANDLE_SIZE,
   marginRight: -1,
   marginTop: 0,
   borderLeftWidth: 1,
@@ -62,6 +64,7 @@ const V_HANDLE_PROPS: BoxProps = {
 }
 const H_HANDLE_PROPS: BoxProps = {
   height: RESIZE_HANDLE_SIZE,
+  minHeight: RESIZE_HANDLE_SIZE,
   marginTop: -1,
   marginRight: 0,
   borderTopWidth: 1,
@@ -86,110 +89,152 @@ export interface ResizableSplitProps {
   splitDirection?: SplitDirection;
   onResizeStart?: () => void;
   boxProps?: BoxProps;
-  initialSize?: number;
 }
 
 /**
- * Inspired by tomkp/react-split-pane
+ * Inspired by tomkp/react-split-pane and zesik/react-splitter-layout
  */
 export const ResizableSplit: FC<ResizableSplitProps> = ({
   resizeEnabled = true,
   splitDirection = SplitDirection.Vertical,
   onResizeStart,
-  initialSize,
   boxProps,
   children
 }) => {
 
   const [resizeActive, setResizeActive] = useState(false);
-  const [resizePosition, setResizePosition] = useState(0);
-  const [frameOneSize, setFrameOneSize] = useState(initialSize);
+  const [frameOneSize, setFrameOneSize] = useState(0);
+  const [frameTwoSize, setFrameTwoSize] = useState(0);
+  const container = useRef<HTMLDivElement>(null);
   const frameOne = useRef<HTMLDivElement>(null);
+  const handle = useRef<HTMLDivElement>(null);
   const frameTwo = useRef<HTMLDivElement>(null);
 
-  const onStart = useCallback(({x, y}: {x: number; y: number}) => {
+  const onStart = useCallback(() => {
     if (resizeEnabled) {
       setResizeActive(true);
-      setResizePosition(splitDirection === SplitDirection.Vertical
-        ? x
-        : y);
       if (onResizeStart) {
         onResizeStart();
       }
     }
-  }, [resizeEnabled, splitDirection, onResizeStart]);
+  }, [resizeEnabled, onResizeStart]);
 
   const onMouseDown = useCallback((event: React.MouseEvent) => {
-    onStart({
-      x: event.clientX,
-      y: event.clientY
-    });
+    onStart();
   }, [onStart]);
 
   const onTouchStart = useCallback((event: React.TouchEvent) => {
-    onStart({
-      x: event.touches[0].clientX,
-      y: event.touches[0].clientY,
-    });
+    onStart();
   }, [onStart]);
 
-  const onMove = useCallback((position: number) => {
-    if (resizeActive && resizeEnabled) {
-      if (frameOne.current && frameTwo.current) {
-        const { width, height } = frameOne.current.getBoundingClientRect();
-        const size = splitDirection === SplitDirection.Vertical
-          ? width : height;
-        const positionDelta = resizePosition - position;
-        let sizeDelta = size - position;
-        // if frames are flex items and have been arranged in a different order
-        const frameOneOrder = window.getComputedStyle(frameOne.current).order;
-        const frameTwoOrder = window.getComputedStyle(frameTwo.current).order;
-        if (frameOneOrder > frameTwoOrder) {
-          logger.debug('swapped size delta due to order of flex frames');
-          sizeDelta = -sizeDelta;
-        }
-        setResizePosition(position - positionDelta);
-        setFrameOneSize(size - sizeDelta);
-      }
+  const doResize = useCallback((sizes: {frameOneSize: number; frameTwoSize: number}) => {
+    if (resizeEnabled && resizeActive) {
+      setFrameOneSize(sizes.frameOneSize);
+      setFrameTwoSize(sizes.frameTwoSize);
     }
   }, [
     resizeActive,
-    resizeEnabled,
-    frameOne,
-    frameTwo,
-    resizePosition,
+    resizeEnabled
+  ]);
+
+  const calculateResize = useCallback((position: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const containerRect = container.current!.getBoundingClientRect();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const handleRect = handle.current!.getBoundingClientRect();
+    let containerSize: number;
+    let handleSize: number;
+    let offset: number;
+    if (splitDirection === SplitDirection.Vertical) {
+      containerSize = containerRect.width;
+      handleSize = handleRect.width;
+      offset = position - containerRect.top; 
+    } else {
+      containerSize = containerRect.height;
+      handleSize = handleRect.height;
+      offset = position - containerRect.left;
+    }
+    if (offset < 0) {
+      offset = 0;
+    } else if (offset > containerSize - handleSize) {
+      offset = containerSize - handleSize;
+    }
+    const newFrameTwoSize = containerSize - handleSize - offset;
+    return {
+      frameOneSize: containerSize - handleSize - newFrameTwoSize,
+      frameTwoSize: newFrameTwoSize,
+    };
+  }, [
     splitDirection,
   ]);
 
+  // set size on mount
+  useLayoutEffect(() => {
+    logger.debug('useLayoutEffect fired to initialize split');
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const containerRect = container.current!.getBoundingClientRect();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const handleRect = handle.current!.getBoundingClientRect();
+    const newSizes = calculateResize(splitDirection === SplitDirection.Vertical
+      ? containerRect.left + ((containerRect.width - handleRect.width) / 2)
+      : containerRect.top + ((containerRect.height - handleRect.height) / 2));
+    // do not use doResize here because it incurs a dependency on resizeActive
+    // which will re-trigger this effect.
+    setFrameOneSize(newSizes.frameOneSize);
+    setFrameTwoSize(newSizes.frameTwoSize);
+  }, [
+    calculateResize,
+    splitDirection
+  ])
+
   const onMouseMove = useCallback((event: MouseEvent) => {
-    onMove(splitDirection === SplitDirection.Vertical
+    const newSizes = calculateResize(splitDirection === SplitDirection.Vertical
       ? event.clientX : event.clientY);
+    doResize(newSizes);
   }, [
     splitDirection,
-    onMove
+    calculateResize,
+    doResize,
   ]);
 
   const onTouchMove = useCallback((event: TouchEvent) => {
-    onMove(splitDirection === SplitDirection.Vertical
+    const newSizes = calculateResize(splitDirection === SplitDirection.Vertical
       ? event.touches[0].clientX : event.touches[0].clientY);
+    doResize(newSizes);
   }, [
     splitDirection,
-    onMove
+    calculateResize,
+    doResize,
   ]);
 
   const onMouseUp = useCallback(() => {
     setResizeActive(false);
   }, []);
 
+  const onWindowResize = useCallback(() => {
+    if (handle.current) {
+      const handleRect = handle.current.getBoundingClientRect();
+      const newSizes = calculateResize(splitDirection === SplitDirection.Vertical
+        ? handleRect.x : handleRect.y);
+      // don't call doResize here as we are doing an automated resize
+      // without checking resizeActive and resizeEnabled
+      setFrameOneSize(newSizes.frameOneSize);
+      setFrameTwoSize(newSizes.frameTwoSize);
+    }
+  }, [calculateResize, splitDirection]);
+
   useEffect(() => {
-    document.addEventListener('mouseup', onMouseUp);
+    window.addEventListener("resize", onWindowResize);
+    document.addEventListener("mouseup", onMouseUp);
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("touchmove", onTouchMove);
     return function() {
+      window.removeEventListener("resize", onWindowResize);
+      document.removeEventListener("mouseup", onMouseUp)
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("touchmove", onTouchMove);
     }
-  }, [onMouseMove, onTouchMove, onMouseUp])
+  }, [onMouseMove, onTouchMove, onMouseUp, onWindowResize]);
 
   const childArray = Children.toArray(children);
   return (
@@ -198,6 +243,7 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
         ? V_RESIZE_CONTAINER_PROPS
         : H_RESIZE_CONTAINER_PROPS}
       {...boxProps}
+      ref={container}
     >
       <Frame
         ref={frameOne}
@@ -208,6 +254,7 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
         {childArray?.[0]}
       </Frame>
       <Box
+        ref={handle}
         as="span"
         onTouchStart={onTouchStart}
         onMouseDown={onMouseDown}
@@ -220,6 +267,8 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
       <Frame
         ref={frameTwo}
         boxProps={FRAME_BOX_PROPS}
+        splitDirection={splitDirection}
+        splitSize={frameTwoSize}
       >
         {childArray?.[1]}
       </Frame>

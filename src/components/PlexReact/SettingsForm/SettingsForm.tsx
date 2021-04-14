@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useContext, useState } from 'react';
 import {
   Box,
   Button,
@@ -7,33 +7,26 @@ import {
   Input, 
   Stack
 } from '@chakra-ui/react';
+import { PlexReactConfigContext, ActionType } from '../PlexReactConfigProvider';
 
-interface PlexApiSettings {
-  plexUrl?: string;
-}
 
-type Props = PlexApiSettings & {
-  setPlexUrl?: (name: string) => void;
-}
+export const SettingsForm: FC = () => {
 
-export const SettingsForm: FC<Props> = ({
-  plexUrl  = 'localhost:32400',
-  setPlexUrl,
-}) => {
+  const [config, updateConfig] = useContext(PlexReactConfigContext);
 
-  const [localPlexUrl, setLocalPlexUrl] = useState(plexUrl);
+  const [localPlexUrl, setLocalPlexUrl] = useState(config.plexUrl);
 
   const submit = () => {
-    setPlexUrl?.(localPlexUrl);
+    updateConfig({type: ActionType.SetPlexUrl, plexUrl: localPlexUrl});
   }
 
   return (
-    <Center>
+    <Center margin={4}>
       <Stack width='50vw' maxWidth='400px' spacing='20px'>
         <Box>
           <FormLabel>Plex URL</FormLabel>
           <Input
-            defaultValue={plexUrl}
+            defaultValue={config.plexUrl}
             placeholder='http://hostname:port'
             onChange={e => setLocalPlexUrl(e.currentTarget.value)}
           />

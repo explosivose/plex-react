@@ -1,8 +1,7 @@
 import React, { FC } from 'react';
-import { Layout } from './components/Layout/Layout';
+import { PlexReact } from './components/PlexReact/PlexReact';
 
 const App: FC = (props) =>
-  <Layout />
-  // <PlexReact />
+  <PlexReact />
 
 export default App;
