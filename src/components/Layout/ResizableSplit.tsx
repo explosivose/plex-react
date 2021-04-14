@@ -80,8 +80,9 @@ const H_HANDLE_PROPS: BoxProps = {
 }
 
 const FRAME_BOX_PROPS: BoxProps = {
-  flex: 1,
   position: "relative",
+  flex: "none",
+  overflow: "auto",
 }
 
 export interface ResizableSplitProps {

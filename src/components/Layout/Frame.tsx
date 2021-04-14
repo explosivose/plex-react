@@ -38,10 +38,9 @@ export const Frame = forwardRef<FrameProps, "div">(({
   if (editModeEnabled) {
     return (
       <Box 
-        props={boxProps}
         ref={ref}
-        height={height}
-        width={width}
+        style={{height, width}}
+        {...boxProps}
       >
         {/* TODO content preview */}
         {/* TODO edit mode menu translucent on top of content preview*/}
@@ -51,10 +50,9 @@ export const Frame = forwardRef<FrameProps, "div">(({
 
   return (
     <Box
-      props={boxProps}
       ref={ref}
-      height={height}
-      width={width}
+      style={{height, width}}
+      {...boxProps}
     >
       {children}
     </Box>
