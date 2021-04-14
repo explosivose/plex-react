@@ -85,6 +85,11 @@ const FRAME_BOX_PROPS: BoxProps = {
   overflow: "auto",
 }
 
+const clearSelection = () => {
+  window.getSelection?.()?.empty?.();
+  window.getSelection?.()?.removeAllRanges?.();
+}
+
 export interface ResizableSplitProps {
   resizeEnabled?: boolean;
   splitDirection?: SplitDirection;
@@ -120,13 +125,14 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
     }
   }, [resizeEnabled, onResizeStart]);
 
-  const onMouseDown = useCallback((event: React.MouseEvent) => {
+  const onMouseDown = useCallback((event?: React.MouseEvent) => {
+    clearSelection();
     onStart();
   }, [onStart]);
 
-  const onTouchStart = useCallback((event: React.TouchEvent) => {
-    onStart();
-  }, [onStart]);
+  const onTouchStart = useCallback((event?: React.TouchEvent) => {
+    onMouseDown();
+  }, [onMouseDown]);
 
   const doResize = useCallback((sizes: {frameOneSize: number; frameTwoSize: number}) => {
     if (resizeEnabled && resizeActive) {
@@ -189,6 +195,7 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
   ])
 
   const onMouseMove = useCallback((event: MouseEvent) => {
+    clearSelection();
     const newSizes = calculateResize(splitDirection === SplitDirection.Vertical
       ? event.clientX : event.clientY);
     doResize(newSizes);
@@ -199,6 +206,7 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
   ]);
 
   const onTouchMove = useCallback((event: TouchEvent) => {
+    clearSelection();
     const newSizes = calculateResize(splitDirection === SplitDirection.Vertical
       ? event.touches[0].clientX : event.touches[0].clientY);
     doResize(newSizes);
