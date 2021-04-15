@@ -1,8 +1,9 @@
 
 import { Box, BoxProps, forwardRef } from "@chakra-ui/react";
 import React, {  useContext } from "react";
-import { EditLayoutContext } from "./EditLayoutProvider";
-import { SplitDirection } from "./ResizableSplit";
+import { EditLayoutContext } from "../EditLayoutProvider";
+import { SplitDirection } from "../ResizableSplit";
+import { FrameEditMenu } from "./FrameEditMenu";
 
 
 export interface FrameProps {
@@ -19,10 +20,12 @@ export const Frame = forwardRef<FrameProps, "div">(({
   boxProps,
   splitDirection,
   splitSize,
+  onRemove,
   children
 }, ref) => {
 
   const [{editModeEnabled}] = useContext(EditLayoutContext);
+
 
   let width: string | undefined;
   let height: string | undefined;
@@ -42,6 +45,9 @@ export const Frame = forwardRef<FrameProps, "div">(({
         style={{height, width}}
         {...boxProps}
       >
+        <FrameEditMenu
+          onRemove={onRemove} 
+        />
         {/* TODO content preview */}
         {/* TODO edit mode menu translucent on top of content preview*/}
       </Box>
