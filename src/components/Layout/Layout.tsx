@@ -1,7 +1,6 @@
 import { Box } from "@chakra-ui/react";
 import logdown from "logdown";
 import React, { ComponentProps, ComponentType, FC, useMemo } from "react";
-import { EditModeProvider } from "./EditModeProvider";
 import { Frame } from "./Frame";
 import { getComponentFromRegister, registerComponent } from "./layoutRegistry";
 import { ResizableSplit } from "./ResizableSplit";
@@ -90,10 +89,8 @@ export const Layout: FC<LayoutProps> = ({layout = defaultLayout}) => {
   }, [layout]);
 
   return (
-    <EditModeProvider>
-      <Box width={"100vw"} height={"100vh"} id="layout-root">
-        {renderNodes(concreteLayout)}
-      </Box>
-    </EditModeProvider>
+    <Box width={"100vw"} height={"100vh"} id="layout-root">
+      {renderNodes(concreteLayout)}
+    </Box>
   )
 }

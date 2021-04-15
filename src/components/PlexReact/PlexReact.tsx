@@ -7,6 +7,8 @@ import { Layout, LayoutNode, LayoutComponent, SimpleProps } from '../Layout/Layo
 import { ResizableSplit, SplitDirection } from '../Layout/ResizableSplit';
 import { PlexReactConfigProvider } from './PlexReactConfigProvider/PlexReactConfigProvider';
 import { registerComponent } from '../Layout/layoutRegistry';
+import { Navbar } from './Navbar/Navbar';
+import { EditLayoutProvider } from '../Layout/EditLayoutProvider';
 
 const queryClient = new QueryClient();
 
@@ -39,7 +41,10 @@ export const PlexReact: FC = () => {
     <QueryClientProvider client={queryClient}>
     <PlexAuthProvider>
     <PlexReactConfigProvider>
+    <EditLayoutProvider>
+      <Navbar />
       <Layout layout={defaultLayout} />
+    </EditLayoutProvider>
     </PlexReactConfigProvider>
     </PlexAuthProvider>
     </QueryClientProvider>

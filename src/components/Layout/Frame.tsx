@@ -1,7 +1,7 @@
 
 import { Box, BoxProps, forwardRef } from "@chakra-ui/react";
 import React, {  useContext } from "react";
-import { EditModeContext } from "./EditModeProvider";
+import { EditLayoutContext } from "./EditLayoutProvider";
 import { SplitDirection } from "./ResizableSplit";
 
 
@@ -22,7 +22,7 @@ export const Frame = forwardRef<FrameProps, "div">(({
   children
 }, ref) => {
 
-  const { editModeEnabled } = useContext(EditModeContext);
+  const [{editModeEnabled}] = useContext(EditLayoutContext);
 
   let width: string | undefined;
   let height: string | undefined;
