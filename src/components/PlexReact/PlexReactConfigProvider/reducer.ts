@@ -13,7 +13,7 @@ export const reducer = (state: State, action: Action): State => {
       }
     }
     default: {
-      throw new Error (`Reducer encountered unexpected action (${action.type})`);
+      throw new Error (`PlexReactConfig Reducer encountered unexpected action (${action.type})`);
     }
   }
 }

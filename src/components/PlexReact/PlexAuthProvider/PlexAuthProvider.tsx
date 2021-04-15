@@ -102,6 +102,6 @@ export const PlexAuthProvider: FC = (props) => {
     authToken: userToken
   }), [userToken]);
 
-  return <PlexAuthContext.Provider value={plexAuth} {...props} />
+  return <PlexAuthContext.Provider {...props} value={plexAuth} />
 };
  

@@ -14,8 +14,6 @@ export const PlexReactConfigContext = createContext<[State, Dispatch<Action>]>([
 
 export const PlexReactConfigProvider: FC = (props) => {
   const [config, updateConfig] = useReducer(reducer, initialState);
-
   const memoizedContext = useMemo<[State, Dispatch<Action>]>(() => [config, updateConfig], [config]);
-
   return <PlexReactConfigContext.Provider {...props} value={memoizedContext} />
 }
