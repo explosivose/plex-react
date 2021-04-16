@@ -11,7 +11,7 @@ export const Navbar: FC = () => {
   }, [editLayout]);
 
   return (
-    <Flex>
+    <Flex margin={1}>
       <Box>
         <Heading size="md">
           Plex React

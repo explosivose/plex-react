@@ -1,5 +1,5 @@
 
-import { Button, ButtonGroup, Stack } from "@chakra-ui/react";
+import { Button, ButtonGroup, Center, Stack } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
 import React, { FC } from "react";
 
@@ -10,12 +10,14 @@ interface Props {
 export const FrameEditMenu: FC<Props> = ({onRemove}) => {
 
   return (
-    <Stack>
-      <ButtonGroup>
-        <Button leftIcon={<CloseIcon />} onClick={onRemove}>
-          Remove Frame
-        </Button>
-      </ButtonGroup>
-    </Stack>
+    <Center height="80%">
+      <Stack bg="gray.500" padding={10} rounded={10}>
+        <ButtonGroup>
+          <Button leftIcon={<CloseIcon />} onClick={onRemove}>
+            Remove Frame
+          </Button>
+        </ButtonGroup>
+      </Stack>
+    </Center>
   )
 };

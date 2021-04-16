@@ -1,5 +1,5 @@
 
-import { Box, BoxProps, forwardRef } from "@chakra-ui/react";
+import { Box, BoxProps, forwardRef, Heading } from "@chakra-ui/react";
 import React, {  useContext } from "react";
 import { EditLayoutContext } from "../EditLayoutProvider";
 import { SplitDirection } from "../ResizableSplit";
@@ -14,6 +14,7 @@ export interface FrameProps {
    * In pixels
    */
   splitSize?: number;
+  layoutPath?: number[];
 }
 
 export const Frame = forwardRef<FrameProps, "div">(({
@@ -43,8 +44,15 @@ export const Frame = forwardRef<FrameProps, "div">(({
       <Box 
         ref={ref}
         style={{height, width}}
+        borderWidth="1px"
+        borderRadius="md"
+        borderColor="gray"
+        padding={4}
         {...boxProps}
       >
+        <Heading size="md">
+          "Content Name"
+        </Heading>
         <FrameEditMenu
           onRemove={onRemove} 
         />
