@@ -155,11 +155,11 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
     if (splitDirection === SplitDirection.Vertical) {
       containerSize = containerRect.width;
       handleSize = handleRect.width;
-      offset = position - containerRect.top; 
+      offset = position - handleRect.width / 2; 
     } else {
       containerSize = containerRect.height;
       handleSize = handleRect.height;
-      offset = position - containerRect.left;
+      offset = position - handleRect.height / 2;
     }
     if (offset < 0) {
       offset = 0;
