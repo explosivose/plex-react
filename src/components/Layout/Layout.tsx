@@ -1,9 +1,8 @@
 import { Box } from "@chakra-ui/react";
 import logdown from "logdown";
-import React, { ComponentProps, ComponentType, FC, useMemo } from "react";
-import { Frame } from "./Frame";
-import { getComponentFromRegister, registerComponent } from "./layoutRegistry";
-import { ResizableSplit } from "./ResizableSplit";
+import React, { ComponentProps, ComponentType, FC, useContext, useMemo } from "react";
+import { EditLayoutContext } from "./EditLayoutProvider";
+import { getComponentFromRegister } from "./layoutRegistry";
 
 const logger = logdown('layout/layout');
 
@@ -29,25 +28,6 @@ interface ConcreteLayoutNode {
   childNodes?: ConcreteLayoutNode[]; 
 }
 
-export enum LayoutComponent {
-  ResizableSplit = "ResizableSplit",
-  Frame = "Frame",
-}
-
-registerComponent(ResizableSplit, LayoutComponent.ResizableSplit);
-registerComponent(Frame, LayoutComponent.Frame);
-
-export const defaultLayout: LayoutNode<LayoutComponent>[] = [{
-  id: "rootSplit",
-  componentName: LayoutComponent.ResizableSplit,
-  childNodes: [{
-    componentName: LayoutComponent.Frame,
-    id: "frameOne"
-  }, {
-    componentName: LayoutComponent.Frame,
-    id: "frameTwo"
-  }]
-}];
 
 const getConcreteLayout = (nodes: LayoutNode[]): ConcreteLayoutNode[] => {
   return nodes.map(({id, componentName, componentProps, childNodes}) => {
@@ -78,11 +58,10 @@ const renderNodes = (nodes: ConcreteLayoutNode[]) => {
   });
 };
 
-export interface LayoutProps {
-  layout?: LayoutNode[];
-}
 
-export const Layout: FC<LayoutProps> = ({layout = defaultLayout}) => {
+export const Layout: FC = () => {
+
+  const [{layout}] = useContext(EditLayoutContext);
 
   const concreteLayout = useMemo(() => {
     return getConcreteLayout(layout);

@@ -3,12 +3,12 @@ import { SettingsForm } from './SettingsForm/SettingsForm';
 import { PlexReactTest } from './PlexReactTest/PlexReactTest'
 import { PlexAuthProvider } from './PlexAuthProvider/PlexAuthProvider';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import { Layout, LayoutNode, LayoutComponent, SimpleProps } from '../Layout/Layout';
+import { Layout, LayoutNode, SimpleProps } from '../Layout/Layout';
 import { ResizableSplit, SplitDirection } from '../Layout/ResizableSplit';
 import { PlexReactConfigProvider } from './PlexReactConfigProvider/PlexReactConfigProvider';
 import { registerComponent } from '../Layout/layoutRegistry';
 import { Navbar } from './Navbar/Navbar';
-import { EditLayoutProvider } from '../Layout/EditLayoutProvider';
+import { EditLayoutProvider, LayoutComponent } from '../Layout/EditLayoutProvider';
 
 const queryClient = new QueryClient();
 
@@ -41,9 +41,9 @@ export const PlexReact: FC = () => {
     <QueryClientProvider client={queryClient}>
     <PlexAuthProvider>
     <PlexReactConfigProvider>
-    <EditLayoutProvider>
+    <EditLayoutProvider initialLayout={defaultLayout}>
       <Navbar />
-      <Layout layout={defaultLayout} />
+      <Layout />
     </EditLayoutProvider>
     </PlexReactConfigProvider>
     </PlexAuthProvider>

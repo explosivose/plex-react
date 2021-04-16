@@ -1,10 +1,12 @@
 import logdown from "logdown";
+import { LayoutNode } from "../Layout";
 import { Action, ActionType } from "./actions"
 
 const logger = logdown("layout/editLayoutReducer");
 
 export type State = {
   editModeEnabled: boolean;
+  layout: LayoutNode[];
 }
 
 export const reducer = (state: State, action: Action): State => {
@@ -28,4 +30,4 @@ export const reducer = (state: State, action: Action): State => {
       throw new Error (`EditLayout Reducer encountered unexpected action (${type})`);
     }
   }
-}
+};
