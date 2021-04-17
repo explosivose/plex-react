@@ -1,14 +1,14 @@
 import { Box, Button, Flex, Heading, Spacer } from "@chakra-ui/react";
 import React, { FC, useContext, useCallback } from "react";
-import { ActionType, EditLayoutContext } from "../../Layout/EditLayoutProvider";
+import { EditLayoutContext } from "../../Layout/EditLayoutProvider";
 
 export const Navbar: FC = () => {
 
-  const [{editModeEnabled}, editLayout] = useContext(EditLayoutContext);
+  const [,[editModeEnabled, setEditModeEnabled]] = useContext(EditLayoutContext);
 
   const handleEditModeButton = useCallback(() => {
-    editLayout({type: ActionType.ToggleEditMode});
-  }, [editLayout]);
+    setEditModeEnabled(enabled => !enabled);
+  }, [setEditModeEnabled]);
 
   return (
     <Flex margin={1}>

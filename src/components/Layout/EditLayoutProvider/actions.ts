@@ -1,17 +1,27 @@
-
 export enum ActionType {
   SetEditMode = "setEditMode",
   ToggleEditMode = "toggleEditMode",
+  ReplaceNodeWithPath = "replaceNodeWithPath",
+  ReplaceNodeWithComponent = "replaceNodeWithComponent",
 }
 
-export interface SetEditModeAction {
-  type: ActionType.SetEditMode;
-  editModeEnabled: boolean;
+type ActionBase<T = ActionType> = {
+  type: T;
 }
 
-export interface ToggleEditModeAction {
-  type: ActionType.ToggleEditMode;
+export type ReplaceNodeWithPathAction = ActionBase<ActionType.ReplaceNodeWithPath> & {
+  replaceAtPath: number[];
+  replaceWithPath: number[];
+  removeChildNodes?: boolean;
 }
 
-export type Action = SetEditModeAction | ToggleEditModeAction;
+export type ReplaceNodeWithComponentAction = ActionBase<ActionType.ReplaceNodeWithComponent> & {
+  replaceAtPath: number[];
+  replacementName: string;
+  replacementId?: number | string;
+  removeChildNodes?: boolean;
+}
 
+
+export type Action = ReplaceNodeWithPathAction
+  | ReplaceNodeWithComponentAction;

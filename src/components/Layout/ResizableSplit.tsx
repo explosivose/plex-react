@@ -5,12 +5,15 @@ import React, {
   Children,
   FC,
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import { ActionType, EditLayoutContext } from "./EditLayoutProvider";
 import { Frame } from "./Frame";
+import { LayoutNodeProps } from "./Layout";
 
 const logger = logdown('layout/resizable-split');
 
@@ -90,7 +93,7 @@ const clearSelection = () => {
   window.getSelection?.()?.removeAllRanges?.();
 }
 
-export interface ResizableSplitProps {
+export interface ResizableSplitProps extends LayoutNodeProps {
   resizeEnabled?: boolean;
   splitDirection?: SplitDirection;
   onResizeStart?: () => void;
@@ -105,9 +108,11 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
   splitDirection = SplitDirection.Vertical,
   onResizeStart,
   boxProps,
+  layoutPath,
   children
 }) => {
 
+  const [editLayout] = useContext(EditLayoutContext);
   const [resizeActive, setResizeActive] = useState(false);
   const [frameOneSize, setFrameOneSize] = useState(0);
   const [frameTwoSize, setFrameTwoSize] = useState(0);
@@ -245,6 +250,27 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
     }
   }, [onMouseMove, onTouchMove, onMouseUp, onWindowResize]);
 
+  const replaceWithFrame = useCallback((frameToKeep: 1 | 2) => {
+    if (layoutPath) {
+      const frameLayoutPath = layoutPath.concat(frameToKeep - 1); // -1 for zero indexing
+       editLayout({
+        type: ActionType.ReplaceNodeWithPath,
+        replaceAtPath: layoutPath,
+        replaceWithPath: frameLayoutPath,
+      });
+    }
+  }, [editLayout, layoutPath]);
+
+  const onRemoveFrameOne = useCallback(() => {
+    // if frameOne is removed then keep frameTwo
+    replaceWithFrame(2);
+  }, [replaceWithFrame]);
+
+  const onRemoveFrameTwo = useCallback(() => {
+    // if frameTwo is removed then keep FrameOne
+    replaceWithFrame(1);
+  }, [replaceWithFrame]);
+
   const childArray = Children.toArray(children);
   return (
     <Box
@@ -259,6 +285,7 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
         splitDirection={splitDirection}
         splitSize={frameOneSize}
         boxProps={FRAME_BOX_PROPS}
+        onRemove={onRemoveFrameOne}
       >
         {childArray?.[0]}
       </Frame>
@@ -278,6 +305,7 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
         boxProps={FRAME_BOX_PROPS}
         splitDirection={splitDirection}
         splitSize={frameTwoSize}
+        onRemove={onRemoveFrameTwo}
       >
         {childArray?.[1]}
       </Frame>

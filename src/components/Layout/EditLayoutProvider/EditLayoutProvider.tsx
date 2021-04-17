@@ -1,4 +1,4 @@
-import React, { createContext, Dispatch, FC, useMemo, useReducer } from "react";
+import React, { createContext, Dispatch, FC, SetStateAction, useMemo, useReducer, useState } from "react";
 import { Frame } from "../Frame";
 import { LayoutNode } from "../Layout";
 import { registerComponent } from "../layoutRegistry";
@@ -11,8 +11,30 @@ export enum LayoutComponent {
   Frame = "Frame",
 }
 
+export const isLayoutComponent = (componentName: string): boolean => {
+  const layoutComponents = [
+    LayoutComponent.Frame,
+    LayoutComponent.ResizableSplit
+  ] as string[];
+  return layoutComponents.includes(componentName);
+};
+
+type EditMode = [
+  boolean, // editMode
+  Dispatch<SetStateAction<boolean>>, // setEditMode
+]
+
 registerComponent(ResizableSplit, LayoutComponent.ResizableSplit);
 registerComponent(Frame, LayoutComponent.Frame);
+
+const dummyDispatch = () => {
+  throw new Error('EditLayoutContext used before initialized');
+};
+
+const defaultEditMode: EditMode = [
+  false,
+  dummyDispatch
+]
 
 export const defaultLayout: LayoutNode<LayoutComponent>[] = [{
   id: "rootSplit",
@@ -25,16 +47,10 @@ export const defaultLayout: LayoutNode<LayoutComponent>[] = [{
     id: "frameTwo"
   }]
 }];
-const defaultState: State = {
-  editModeEnabled: false,
-  layout: defaultLayout,
-}
 
-const dummyActionDispatch = () => {
-  throw new Error('EditLayoutContext used before initialized');
-}
 
-export const EditLayoutContext = createContext<[State, Dispatch<Action>]>([defaultState, dummyActionDispatch]);
+export const EditLayoutContext =
+  createContext<[Dispatch<Action>, EditMode, State]>([dummyDispatch, defaultEditMode, defaultLayout]);
 
 export interface EditLayoutProviderProps {
   initialLayout?: LayoutNode[];
@@ -44,7 +60,10 @@ export const EditLayoutProvider: FC<EditLayoutProviderProps> = ({
   initialLayout = defaultLayout,
   ...props
 }) => {
-  const [config, updateConfig] = useReducer(reducer, {editModeEnabled: false, layout: initialLayout});
-  const memoizedContext = useMemo<[State, Dispatch<Action>]>(() => [config, updateConfig], [config]);
+  const editMode = useState(false);
+  const [config, updateConfig] = useReducer(reducer, initialLayout);
+  const memoizedContext = useMemo<[Dispatch<Action>, EditMode, State]>(() => {
+    return [updateConfig, editMode, config]
+  }, [config, editMode]);
   return <EditLayoutContext.Provider {...props} value={memoizedContext} />;
 }

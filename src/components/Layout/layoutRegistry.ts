@@ -22,6 +22,10 @@ export const registerComponent = <C, K extends string = string>(Component: C, co
   };
 }
 
+export const isComponentRegistered = <K extends string = string>(componentName: K): boolean => {
+  return register[componentName] !== undefined;
+}
+
 export const getComponentFromRegister = <C extends ComponentType = ComponentType<unknown>, K extends string = string>(
   componentName: K
 ): RegisteredComponent<C, K> => {
