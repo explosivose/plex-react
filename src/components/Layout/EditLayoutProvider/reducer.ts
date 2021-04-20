@@ -1,7 +1,9 @@
 import logdown from "logdown";
+import { generate as createId } from "short-uuid";
 import { LayoutNode } from "../Layout";
 import { isComponentRegistered } from "../layoutRegistry";
 import { Action, ActionType } from "./actions"
+import { LayoutComponent } from "./EditLayoutProvider";
 
 const logger = logdown("layout/editLayoutReducer");
 
@@ -10,6 +12,7 @@ export type State = LayoutNode[];
 const getNodeAtPath = (path: number[], tree?: LayoutNode[]): LayoutNode | undefined => {
   logger.debug('getNodeAtPath', path, tree);
   if (tree === undefined) {
+    // we either hit an implicit Frame or a non-existant part of the tree
     return undefined;
   }
   if (path.length === 1) {
@@ -30,20 +33,59 @@ const replaceNode = ({
   replaceAtPath,
   replacement
 }: ReplaceNodeOptions): LayoutNode[] => {
+  logger.debug('replaceNode', tree, replaceAtPath, replacement);
+  if (replacement.componentName === LayoutComponent.Frame) {
+    // frames are implicit components that shouldn't appear in the tree
+    logger.warn('Adding Frame node to tree!');
+  }
   if (replaceAtPath.length === 1) {
     tree[replaceAtPath[0]] = replacement
     return tree;
   } else {
-    const nextTree = tree[replaceAtPath[0]];
-    if (nextTree.childNodes) {
+    const nextNode = tree[replaceAtPath[0]];
+    if (nextNode.childNodes) {
       return replaceNode({
-        tree: nextTree.childNodes,
+        tree: nextNode.childNodes,
         replaceAtPath: replaceAtPath.slice(1),
         replacement
-      })
+      });
     } else {
-      logger.error('Traversed to non-existant part of layout tree');
-      return [];
+      logger.error('replaceNode: Traversed to non-existant part of layout tree');
+      // FIXME
+      // we can find ourselves in a situation where we are adding to an implicit Frame
+      // and this implicit Frame may not be the first or only implicit child of the
+      // nextNode. How can we insert into the tree [undefined, replacement]?
+      // This happens when we have an empty ResizableSplit [,]
+      // And the second implicit Frame tries to add content before the first
+      // [undefined, replacement]
+      // nextNode.childNodes = [undefined, replacement];
+      return tree;
+    }
+  }
+}
+
+interface RemoveNodeOptions {
+  tree: LayoutNode[];
+  removeAtPath: number[];
+}
+
+const removeNode = ({
+  tree,
+  removeAtPath
+}: RemoveNodeOptions): LayoutNode[] => {
+  logger.debug('removeNode', tree, removeAtPath);
+  if (removeAtPath.length === 1) {
+    return tree.splice(removeAtPath[0], 1);
+  } else {
+    const nextNode = tree[removeAtPath[0]];
+    if (nextNode.childNodes) {
+      return removeNode({
+        tree: nextNode.childNodes,
+        removeAtPath: removeAtPath.slice(1)
+      });
+    } else {
+      logger.error('removeNode: Traversed to non-existant part of layout tree');
+      return []
     }
   }
 }
@@ -64,7 +106,7 @@ const replaceNodeWithPath = ({
   const replacement = getNodeAtPath(replaceWithPath, tree);
   if (replacement) {
     logger.debug(`Replacing with ${replacement.id} ${replacement.componentName}`)
-    return replaceNode({
+    replaceNode({
       tree,
       replaceAtPath,
       replacement: {
@@ -75,9 +117,13 @@ const replaceNodeWithPath = ({
       }
     });
   } else {
-    logger.error(`Error in layout tree replaceNodeWithPath(): could not find replacement at ${replaceWithPath}`);
-    return tree;
+    logger.debug(`No replacement at ${replaceWithPath}. Replacing with nothing (removing).`);
+    removeNode({
+      tree,
+      removeAtPath: replaceAtPath,
+    });
   }
+  return tree;
 }
 
 interface ReplaceNodeWithComponent {
@@ -99,38 +145,43 @@ const replaceNodeWithComponent = ({
     logger.error(`Aborting layout edit because component replacement is not registered ${replacementName}`);
     return tree;
   }
-  const toRemove = getNodeAtPath(replaceAtPath);
+  logger.debug('replaceNodeWithComponent', replaceAtPath);
+  const toRemove = getNodeAtPath(replaceAtPath, tree);
+  let replacement: LayoutNode;
   if (toRemove === undefined) {
-    logger.error(`Error in layout tree replaceNodeWithComponent: could not find path to replace at ${replaceAtPath}`);
-    return tree;
+    logger.debug(`Nothing to replace at ${replaceAtPath}. Adding new item.`);
+    replacement = {
+      id: replacementId ?? `${replacementName}-${createId()}`,
+      componentName: replacementName,
+    };
   } else {
-    const replacement: LayoutNode = {
+    logger.debug('toRemove', toRemove.id, toRemove.componentName);
+    replacement = {
       id: replacementId ?? toRemove.id,
       componentName: replacementName,
       childNodes: removeChildNodes
         ? undefined
         : toRemove.childNodes
-    }
-    return replaceNode({
-      tree,
-      replaceAtPath,
-      replacement
-    });
+    };
   }
+  replaceNode({
+    tree,
+    replaceAtPath,
+    replacement
+  });
+  return tree;
 }
-
 
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case ActionType.ReplaceNodeWithPath: {
-      logger.debug("Replacing node in layout with path", state);
+      logger.debug("Replacing node in layout with path");
       const result = [...replaceNodeWithPath({
         tree: state,
         replaceAtPath: action.replaceAtPath,
         replaceWithPath: action.replaceWithPath,
         removeChildNodes: action.removeChildNodes
       })];
-      logger.debug("Replacement result", result === state, result);
       return result;
     }
     case ActionType.ReplaceNodeWithComponent: {
@@ -141,6 +192,11 @@ export const reducer = (state: State, action: Action): State => {
         replacementName: action.replacementName,
         replacementId: action.replacementId
       })];
+    }
+    case ActionType.RemoveNode: {
+      logger.debug("Removing node in layout.");
+      removeNode({tree: state, removeAtPath: action.removeAtPath});
+      return [...state];
     }
     default: {
       const type = (action as {type: unknown}).type

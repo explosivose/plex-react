@@ -22,6 +22,8 @@ export const Frame = forwardRef<FrameProps, "div">(({
   splitDirection,
   splitSize,
   onRemove,
+  layoutPath,
+  editable,
   children
 }, ref) => {
 
@@ -38,7 +40,7 @@ export const Frame = forwardRef<FrameProps, "div">(({
     }
   }
 
-  if (editModeEnabled) {
+  if (editModeEnabled && editable) {
     return (
       <Box 
         ref={ref}
@@ -54,6 +56,7 @@ export const Frame = forwardRef<FrameProps, "div">(({
         </Heading>
         <FrameEditMenu
           onRemove={onRemove} 
+          layoutPath={layoutPath}
         />
         {/* TODO content preview */}
         {/* TODO edit mode menu translucent on top of content preview*/}

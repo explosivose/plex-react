@@ -16,6 +16,8 @@ export type SimpleProps<C extends ComponentType> =
 
 export interface LayoutNodeProps {
   layoutPath?: number[];
+  editable?: boolean;
+  editableChildren?: boolean[];
 }
 
 export interface LayoutNode<K extends string = string> {
@@ -28,7 +30,7 @@ export interface LayoutNode<K extends string = string> {
 interface ConcreteLayoutNode {
   id: number | string;
   componentName: string;
-  Component: ComponentType<LayoutNodeProps>;
+  Component: ComponentType<unknown>;
   componentPath: number[];
   componentProps?: Record<string, Serializable>;
   childNodes?: ConcreteLayoutNode[]; 
@@ -38,13 +40,14 @@ interface ConcreteLayoutNode {
 const getConcreteLayout = (nodes: LayoutNode[], path: number[]): ConcreteLayoutNode[] => {
   return nodes.map(({id, componentName, componentProps, childNodes}, i) => {
     const componentPath = path.concat(i);
+    logger.debug(id, componentName, componentPath);
     return {
       id,
       componentName,
       componentPath,
       Component: getComponentFromRegister(componentName).Component,
       componentProps,
-      childNodes: childNodes && getConcreteLayout(childNodes, path),
+      childNodes: childNodes && getConcreteLayout(childNodes, componentPath),
     }
   });
 }
@@ -53,27 +56,47 @@ const renderNodes = (nodes: ConcreteLayoutNode[], parentIsLayoutComponent?: bool
   if (nodes === undefined) {
     return null;
   }
-  return nodes.map(({Component, componentProps, childNodes, id, componentName, componentPath}) => {
+  return nodes.map((node) => {
+    const { Component, componentName, id, childNodes, componentPath, componentProps } = node;  
     if (Component === null) {
       return null;
     }
-    const renderComponent = () =>
-      <Component key={id} layoutPath={componentPath} {...componentProps}>
-        {childNodes && renderNodes(childNodes, isLayoutComponent(componentName))}
-      </Component>
-    // detect & wrap "naked" non-layout component i.e. one that 
-    // is not parented by Frame (or ResizableSplit etc.)
-    // otherwise the user loses control over this leaf of the layout tree
-    if (!isLayoutComponent(componentName) && !parentIsLayoutComponent) {
-      logger.debug(`layout create (and autowrap) ${id} (${componentName})`)
+    const isLeaf = (n: ConcreteLayoutNode) => n.childNodes === undefined;
+    const nodeIsLeaf = isLeaf(node);
+    // 'why not assign isLayoutComponent to a variable?'
+    // because the compiler doesn't infer the type with this typeguard unless it is inside the if-statement
+    if (isLayoutComponent(Component, componentName)) {
+      logger.debug(`layout create layoutComponent ${id} (${componentName}, editable=${nodeIsLeaf})`);
       return (
-        <Frame>
-          {renderComponent()}
+        <Component
+          key={id}
+          layoutPath={componentPath} 
+          editable={nodeIsLeaf}
+          editableChildren={node.childNodes?.map(n => isLeaf(n) && !isLayoutComponent(n.Component, n.componentName))}
+        >
+          {childNodes && renderNodes(childNodes, /*isLayoutComponent=*/ true)}
+        </Component>
+      );
+    } else if (parentIsLayoutComponent) {
+      logger.debug(`layout create content ${id} (${componentName}, editable=${nodeIsLeaf})`);
+      return (
+        <Component key={id}>
+          {childNodes && renderNodes(childNodes, /*isLayoutComponent=*/ false)}
+        </Component>
+      );
+    } else {
+      logger.debug(`layout create & wrap content ${id} (${componentName}, editable=${nodeIsLeaf})`);
+      // detect & wrap "naked" non-layout component i.e. one that 
+      // is not parented by Frame (or ResizableSplit etc.)
+      // otherwise the user loses control over this leaf of the layout tree
+      return (
+        <Frame key={id} layoutPath={componentPath} editable={nodeIsLeaf}>
+          <Component {...componentProps}>
+            {childNodes && renderNodes(childNodes, isLayoutComponent(Component, componentName))}
+          </Component>
         </Frame>
-      )
+      );
     }
-    logger.debug(`layout create ${id} (${componentName})`)
-    return renderComponent();
   });
 };
 
@@ -85,6 +108,9 @@ export const Layout: FC = () => {
   const concreteLayout = useMemo(() => {
     return getConcreteLayout(layout, []);
   }, [layout]);
+  
+  logger.debug(layout);
+  logger.debug(concreteLayout);
 
   return (
     <Box width={"100vw"} height={"100vh"} id="layout-root">

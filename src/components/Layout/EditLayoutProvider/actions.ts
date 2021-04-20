@@ -3,6 +3,7 @@ export enum ActionType {
   ToggleEditMode = "toggleEditMode",
   ReplaceNodeWithPath = "replaceNodeWithPath",
   ReplaceNodeWithComponent = "replaceNodeWithComponent",
+  RemoveNode = "removeNode",
 }
 
 type ActionBase<T = ActionType> = {
@@ -22,6 +23,11 @@ export type ReplaceNodeWithComponentAction = ActionBase<ActionType.ReplaceNodeWi
   removeChildNodes?: boolean;
 }
 
+export type RemoveNodeAction = ActionBase<ActionType.RemoveNode> & {
+  removeAtPath: number[];
+}
+
 
 export type Action = ReplaceNodeWithPathAction
-  | ReplaceNodeWithComponentAction;
+  | ReplaceNodeWithComponentAction
+  | RemoveNodeAction;

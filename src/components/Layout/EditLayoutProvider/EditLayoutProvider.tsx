@@ -1,6 +1,15 @@
-import React, { createContext, Dispatch, FC, SetStateAction, useMemo, useReducer, useState } from "react";
+import React, {
+  ComponentType,
+  createContext,
+  Dispatch,
+  FC,
+  SetStateAction,
+  useMemo,
+  useReducer,
+  useState
+} from "react";
 import { Frame } from "../Frame";
-import { LayoutNode } from "../Layout";
+import { LayoutNode, LayoutNodeProps } from "../Layout";
 import { registerComponent } from "../layoutRegistry";
 import { ResizableSplit } from "../ResizableSplit";
 import { Action } from "./actions";
@@ -11,7 +20,10 @@ export enum LayoutComponent {
   Frame = "Frame",
 }
 
-export const isLayoutComponent = (componentName: string): boolean => {
+export const isLayoutComponent = (
+  component: unknown,
+  componentName: string
+): component is ComponentType<LayoutNodeProps> => {
   const layoutComponents = [
     LayoutComponent.Frame,
     LayoutComponent.ResizableSplit

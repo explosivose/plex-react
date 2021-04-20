@@ -109,6 +109,8 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
   onResizeStart,
   boxProps,
   layoutPath,
+  editable,
+  editableChildren,
   children
 }) => {
 
@@ -160,11 +162,11 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
     if (splitDirection === SplitDirection.Vertical) {
       containerSize = containerRect.width;
       handleSize = handleRect.width;
-      offset = position - handleRect.width / 2; 
+      offset = position - containerRect.left - handleRect.width / 2; 
     } else {
       containerSize = containerRect.height;
       handleSize = handleRect.height;
-      offset = position - handleRect.height / 2;
+      offset = position - containerRect.top - handleRect.height / 2;
     }
     if (offset < 0) {
       offset = 0;
@@ -250,12 +252,22 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
     }
   }, [onMouseMove, onTouchMove, onMouseUp, onWindowResize]);
 
+  const [frameOneLayoutPath, setFrameOneLayoutPath] = useState(layoutPath?.concat(0) || []);
+  const [frameTwoLayoutPath, setFrameTwoLayoutPath] = useState(layoutPath?.concat(1) || []);
+
+  useEffect(() => {
+    setFrameOneLayoutPath(layoutPath?.concat(0) || []);
+    setFrameTwoLayoutPath(layoutPath?.concat(1) || []);
+  }, [layoutPath]);
+
   const replaceWithFrame = useCallback((frameToKeep: 1 | 2) => {
     if (layoutPath) {
       const frameLayoutPath = layoutPath.concat(frameToKeep - 1); // -1 for zero indexing
-       editLayout({
+      editLayout({
         type: ActionType.ReplaceNodeWithPath,
         replaceAtPath: layoutPath,
+        // frameLayoutPath will point to the LayoutNode (child of this implicit Frame)
+        // or nothing if the frame is empty, in which case we will be replaced with nothing (removed).
         replaceWithPath: frameLayoutPath,
       });
     }
@@ -286,6 +298,8 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
         splitSize={frameOneSize}
         boxProps={FRAME_BOX_PROPS}
         onRemove={onRemoveFrameOne}
+        layoutPath={frameOneLayoutPath}
+        editable={editable || editableChildren?.[0]}
       >
         {childArray?.[0]}
       </Frame>
@@ -306,6 +320,8 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
         splitDirection={splitDirection}
         splitSize={frameTwoSize}
         onRemove={onRemoveFrameTwo}
+        layoutPath={frameTwoLayoutPath}
+        editable={editable || editableChildren?.[1]}
       >
         {childArray?.[1]}
       </Frame>
