@@ -299,7 +299,7 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
         boxProps={FRAME_BOX_PROPS}
         onRemove={onRemoveFrameOne}
         layoutPath={frameOneLayoutPath}
-        editable={editable || editableChildren?.[0]}
+        editable={editable || editableChildren?.[0] || childArray?.[0] === undefined}
       >
         {childArray?.[0]}
       </Frame>
@@ -321,7 +321,7 @@ export const ResizableSplit: FC<ResizableSplitProps> = ({
         splitSize={frameTwoSize}
         onRemove={onRemoveFrameTwo}
         layoutPath={frameTwoLayoutPath}
-        editable={editable || editableChildren?.[1]}
+        editable={editable || editableChildren?.[1] || childArray?.[1] === undefined}
       >
         {childArray?.[1]}
       </Frame>

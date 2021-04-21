@@ -19,6 +19,7 @@ export const FrameEditMenu: FC<Props> = ({onRemove, layoutPath}) => {
         type: ActionType.ReplaceNodeWithComponent,
         replaceAtPath: layoutPath,
         replacementName: LayoutComponent.ResizableSplit,
+        reattachAsChild: 0,
       });
     }
   }, [editLayout, layoutPath]);

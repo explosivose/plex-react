@@ -1,6 +1,6 @@
 import logdown from "logdown";
 import { generate as createId } from "short-uuid";
-import { LayoutNode } from "../Layout";
+import { LayoutNode, LayoutTree } from "../Layout";
 import { isComponentRegistered } from "../layoutRegistry";
 import { Action, ActionType } from "./actions"
 import { LayoutComponent } from "./EditLayoutProvider";
@@ -9,7 +9,7 @@ const logger = logdown("layout/editLayoutReducer");
 
 export type State = LayoutNode[];
 
-const getNodeAtPath = (path: number[], tree?: LayoutNode[]): LayoutNode | undefined => {
+const getNodeAtPath = (path: number[], tree?: LayoutTree): LayoutNode | undefined => {
   logger.debug('getNodeAtPath', path, tree);
   if (tree === undefined) {
     // we either hit an implicit Frame or a non-existant part of the tree
@@ -18,12 +18,12 @@ const getNodeAtPath = (path: number[], tree?: LayoutNode[]): LayoutNode | undefi
   if (path.length === 1) {
     return tree[path[0]];
   } else {
-    return getNodeAtPath(path.slice(1), tree[path[0]].childNodes);
+    return getNodeAtPath(path.slice(1), tree[path[0]]?.childNodes);
   }
 }
 
 interface ReplaceNodeOptions {
-  tree: LayoutNode[];
+  tree: LayoutTree;
   replaceAtPath: number[];
   replacement: LayoutNode;
 }
@@ -32,53 +32,65 @@ const replaceNode = ({
   tree,
   replaceAtPath,
   replacement
-}: ReplaceNodeOptions): LayoutNode[] => {
+}: ReplaceNodeOptions): LayoutTree => {
   logger.debug('replaceNode', tree, replaceAtPath, replacement);
   if (replacement.componentName === LayoutComponent.Frame) {
     // frames are implicit components that shouldn't appear in the tree
-    logger.warn('Adding Frame node to tree!');
+    logger.warn('replaceNode: Adding Frame node to tree!');
   }
   if (replaceAtPath.length === 1) {
     tree[replaceAtPath[0]] = replacement
     return tree;
   } else {
     const nextNode = tree[replaceAtPath[0]];
-    if (nextNode.childNodes) {
+    if (nextNode?.childNodes) {
       return replaceNode({
         tree: nextNode.childNodes,
         replaceAtPath: replaceAtPath.slice(1),
         replacement
       });
     } else {
-      logger.error('replaceNode: Traversed to non-existant part of layout tree');
-      // FIXME
-      // we can find ourselves in a situation where we are adding to an implicit Frame
-      // and this implicit Frame may not be the first or only implicit child of the
-      // nextNode. How can we insert into the tree [undefined, replacement]?
-      // This happens when we have an empty ResizableSplit [,]
-      // And the second implicit Frame tries to add content before the first
-      // [undefined, replacement]
-      // nextNode.childNodes = [undefined, replacement];
+      if (nextNode === undefined || replaceAtPath.length > 2) {
+        // We are not at the end of the replaceAtPath yet. The only undefined nodes
+        // in the tree are leafs, so there should be a node here.
+        logger.error('replaceNode: Traversed to non-existant part of layout tree');
+      } else {
+        // Found a node without children on the replaceAtPath.
+        // This is allowed if we are 2 steps away from a leaf.
+        // This can happen for example when we have an empty ResizableSplit[,]
+        // (which has implicit Frame components in the tree)
+        // In this case we will create the childNodes array. 
+        logger.debug('repladeNode: creating childNodes')
+        const createAtPath = replaceAtPath.slice(1);
+        nextNode.childNodes = [];
+        // back-fill any undefined children that come before this replacement
+        // e.g. nextNode.childNodes = [undefined, replacement]
+        // ensures that the replacement is added at the correct position
+        for (let i = 0; i < createAtPath[0]; i++) {
+          nextNode.childNodes.push(undefined);
+        }
+        nextNode.childNodes[createAtPath[0]] = replacement;
+      }
       return tree;
     }
   }
 }
 
 interface RemoveNodeOptions {
-  tree: LayoutNode[];
+  tree: LayoutTree;
   removeAtPath: number[];
 }
 
 const removeNode = ({
   tree,
   removeAtPath
-}: RemoveNodeOptions): LayoutNode[] => {
+}: RemoveNodeOptions): LayoutTree => {
   logger.debug('removeNode', tree, removeAtPath);
   if (removeAtPath.length === 1) {
     return tree.splice(removeAtPath[0], 1);
   } else {
     const nextNode = tree[removeAtPath[0]];
-    if (nextNode.childNodes) {
+    if (nextNode?.childNodes) {
       return removeNode({
         tree: nextNode.childNodes,
         removeAtPath: removeAtPath.slice(1)
@@ -105,7 +117,7 @@ const replaceNodeWithPath = ({
 }: ReplaceNodeWithPathOptions): LayoutNode[] => {
   const replacement = getNodeAtPath(replaceWithPath, tree);
   if (replacement) {
-    logger.debug(`Replacing with ${replacement.id} ${replacement.componentName}`)
+    logger.debug(`replaceNodeWithPath: Replacing with ${replacement.id} ${replacement.componentName}`)
     replaceNode({
       tree,
       replaceAtPath,
@@ -117,7 +129,7 @@ const replaceNodeWithPath = ({
       }
     });
   } else {
-    logger.debug(`No replacement at ${replaceWithPath}. Replacing with nothing (removing).`);
+    logger.debug(`replaceNodeWithPath: No replacement at ${replaceWithPath}. Replacing with nothing (removing).`);
     removeNode({
       tree,
       removeAtPath: replaceAtPath,
@@ -131,7 +143,15 @@ interface ReplaceNodeWithComponent {
   replaceAtPath: number[];
   replacementName: string;
   replacementId?: number | string;
-  removeChildNodes?: boolean;
+  /**
+   * Reattach the replaced node as a child of the replacement node at index.
+   * This option overrides removeChildNodes
+   */
+  reattachAsChild?: number;
+  /**
+   * If true, adopt the childNodes from the replaced node.
+   */
+  adoptChildNodes?: boolean;
 }
 
 const replaceNodeWithComponent = ({
@@ -139,29 +159,45 @@ const replaceNodeWithComponent = ({
   replaceAtPath,
   replacementName,
   replacementId,
-  removeChildNodes
+  adoptChildNodes,
+  reattachAsChild
 }: ReplaceNodeWithComponent): LayoutNode[] => {
   if (!isComponentRegistered(replacementName)) {
     logger.error(`Aborting layout edit because component replacement is not registered ${replacementName}`);
     return tree;
   }
   logger.debug('replaceNodeWithComponent', replaceAtPath);
-  const toRemove = getNodeAtPath(replaceAtPath, tree);
+  const toReplace = getNodeAtPath(replaceAtPath, tree);
   let replacement: LayoutNode;
-  if (toRemove === undefined) {
+  if (toReplace === undefined) {
     logger.debug(`Nothing to replace at ${replaceAtPath}. Adding new item.`);
     replacement = {
       id: replacementId ?? `${replacementName}-${createId()}`,
       componentName: replacementName,
     };
   } else {
-    logger.debug('toRemove', toRemove.id, toRemove.componentName);
+    let childNodes: LayoutTree | undefined;
+    logger.debug(`Replaced node: `, toReplace)
+    if (reattachAsChild !== undefined) {
+      logger.debug(`Reattaching node as a child of the replacement node`)
+      // if we are to reattach the replaced node as a child
+      childNodes = [];
+      // back-fill the empty indexes 
+      for (let i = 0; i < reattachAsChild; i++) {
+        childNodes.push(undefined);
+      }
+      // assign as child at the desired position in child array
+      childNodes[reattachAsChild] = toReplace;
+    } else if (adoptChildNodes) {
+      logger.debug(`Adopting children of replaced node.`)
+      // adopt children from replaced node
+      childNodes = toReplace.childNodes;
+    }
+
     replacement = {
-      id: replacementId ?? toRemove.id,
+      id: replacementId ?? `${replacementName}-${createId()}`,
       componentName: replacementName,
-      childNodes: removeChildNodes
-        ? undefined
-        : toRemove.childNodes
+      childNodes
     };
   }
   replaceNode({
@@ -190,7 +226,9 @@ export const reducer = (state: State, action: Action): State => {
         tree: state,
         replaceAtPath: action.replaceAtPath,
         replacementName: action.replacementName,
-        replacementId: action.replacementId
+        replacementId: action.replacementId,
+        adoptChildNodes: action.adoptChildNodes,
+        reattachAsChild: action.reattachAsChild
       })];
     }
     case ActionType.RemoveNode: {

@@ -20,7 +20,15 @@ export type ReplaceNodeWithComponentAction = ActionBase<ActionType.ReplaceNodeWi
   replaceAtPath: number[];
   replacementName: string;
   replacementId?: number | string;
-  removeChildNodes?: boolean;
+  /**
+   * If true, adopt the childNodes from the replaced node.
+   */
+  adoptChildNodes?: boolean;
+  /**
+   * Reattach the replaced node as a child of the replacement node at index.
+   * This option overrides removeChildNodes
+   */
+  reattachAsChild?: number;
 }
 
 export type RemoveNodeAction = ActionBase<ActionType.RemoveNode> & {
@@ -31,3 +39,4 @@ export type RemoveNodeAction = ActionBase<ActionType.RemoveNode> & {
 export type Action = ReplaceNodeWithPathAction
   | ReplaceNodeWithComponentAction
   | RemoveNodeAction;
+  

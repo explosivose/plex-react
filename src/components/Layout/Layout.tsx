@@ -24,8 +24,10 @@ export interface LayoutNode<K extends string = string> {
   id: number | string;
   componentName: K;
   componentProps?: Record<string, Serializable>;
-  childNodes?: LayoutNode<K>[];
+  childNodes?: (LayoutNode<K> | undefined)[];
 }
+
+export type LayoutTree<K extends string = string> = (LayoutNode<K> | undefined)[];
 
 interface ConcreteLayoutNode {
   id: number | string;
@@ -33,12 +35,17 @@ interface ConcreteLayoutNode {
   Component: ComponentType<unknown>;
   componentPath: number[];
   componentProps?: Record<string, Serializable>;
-  childNodes?: ConcreteLayoutNode[]; 
+  childNodes?: (ConcreteLayoutNode | undefined)[]; 
 }
 
+export type ConcreteLayoutTree = (ConcreteLayoutNode | undefined)[];
 
-const getConcreteLayout = (nodes: LayoutNode[], path: number[]): ConcreteLayoutNode[] => {
-  return nodes.map(({id, componentName, componentProps, childNodes}, i) => {
+const getConcreteLayout = (nodes: LayoutTree, path: number[]): ConcreteLayoutTree => {
+  return nodes.map((node, i) => {
+    if (node === undefined) {
+      return undefined;
+    }
+    const { id, componentName, componentProps, childNodes } = node;
     const componentPath = path.concat(i);
     logger.debug(id, componentName, componentPath);
     return {
@@ -52,11 +59,14 @@ const getConcreteLayout = (nodes: LayoutNode[], path: number[]): ConcreteLayoutN
   });
 }
 
-const renderNodes = (nodes: ConcreteLayoutNode[], parentIsLayoutComponent?: boolean) => {
+const renderNodes = (nodes: ConcreteLayoutTree, parentIsLayoutComponent?: boolean) => {
   if (nodes === undefined) {
     return null;
   }
   return nodes.map((node) => {
+    if (node === undefined) {
+      return null;
+    }
     const { Component, componentName, id, childNodes, componentPath, componentProps } = node;  
     if (Component === null) {
       return null;
@@ -72,7 +82,10 @@ const renderNodes = (nodes: ConcreteLayoutNode[], parentIsLayoutComponent?: bool
           key={id}
           layoutPath={componentPath} 
           editable={nodeIsLeaf}
-          editableChildren={node.childNodes?.map(n => isLeaf(n) && !isLayoutComponent(n.Component, n.componentName))}
+          // TODO reassess this code ...
+          // is the intention clear here? is the implementation solid?
+          editableChildren={node.childNodes?.map(n =>
+            n === undefined || (isLeaf(n) && !isLayoutComponent(n.Component, n.componentName)))}
         >
           {childNodes && renderNodes(childNodes, /*isLayoutComponent=*/ true)}
         </Component>
