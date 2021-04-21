@@ -7,9 +7,9 @@ import { LayoutComponent } from "./EditLayoutProvider";
 
 const logger = logdown("layout/editLayoutReducer");
 
-export type State = LayoutNode[];
+export type State = LayoutTree;
 
-const getNodeAtPath = (path: number[], tree?: LayoutTree): LayoutNode | undefined => {
+const getNodeAtPath = (path: number[], tree?: Readonly<LayoutTree>): Readonly<LayoutNode> | undefined => {
   logger.debug('getNodeAtPath', path, tree);
   if (tree === undefined) {
     // we either hit an implicit Frame or a non-existant part of the tree
@@ -103,7 +103,7 @@ const removeNode = ({
 }
 
 interface ReplaceNodeWithPathOptions {
-  tree: LayoutNode[];
+  tree: Readonly<LayoutTree>;
   replaceAtPath: number[];
   replaceWithPath: number[]
   removeChildNodes?: boolean;
@@ -114,12 +114,13 @@ const replaceNodeWithPath = ({
   replaceAtPath,
   replaceWithPath,
   removeChildNodes
-}: ReplaceNodeWithPathOptions): LayoutNode[] => {
+}: ReplaceNodeWithPathOptions): LayoutTree => {
   const replacement = getNodeAtPath(replaceWithPath, tree);
+  const newTree = [...tree];
   if (replacement) {
     logger.debug(`replaceNodeWithPath: Replacing with ${replacement.id} ${replacement.componentName}`)
     replaceNode({
-      tree,
+      tree: newTree,
       replaceAtPath,
       replacement: {
         ...replacement,
@@ -131,15 +132,15 @@ const replaceNodeWithPath = ({
   } else {
     logger.debug(`replaceNodeWithPath: No replacement at ${replaceWithPath}. Replacing with nothing (removing).`);
     removeNode({
-      tree,
+      tree: newTree,
       removeAtPath: replaceAtPath,
     });
   }
-  return tree;
+  return newTree;
 }
 
 interface ReplaceNodeWithComponent {
-  tree: LayoutNode[];
+  tree: Readonly<LayoutTree>;
   replaceAtPath: number[];
   replacementName: string;
   replacementId?: number | string;
@@ -161,10 +162,10 @@ const replaceNodeWithComponent = ({
   replacementId,
   adoptChildNodes,
   reattachAsChild
-}: ReplaceNodeWithComponent): LayoutNode[] => {
+}: ReplaceNodeWithComponent): LayoutTree => {
   if (!isComponentRegistered(replacementName)) {
     logger.error(`Aborting layout edit because component replacement is not registered ${replacementName}`);
-    return tree;
+    return [...tree];
   }
   logger.debug('replaceNodeWithComponent', replaceAtPath);
   const toReplace = getNodeAtPath(replaceAtPath, tree);
@@ -187,11 +188,11 @@ const replaceNodeWithComponent = ({
         childNodes.push(undefined);
       }
       // assign as child at the desired position in child array
-      childNodes[reattachAsChild] = toReplace;
+      childNodes[reattachAsChild] = { ...toReplace };
     } else if (adoptChildNodes) {
       logger.debug(`Adopting children of replaced node.`)
       // adopt children from replaced node
-      childNodes = toReplace.childNodes;
+      childNodes = toReplace.childNodes ? [ ...toReplace.childNodes ] : undefined;
     }
 
     replacement = {
@@ -200,12 +201,13 @@ const replaceNodeWithComponent = ({
       childNodes
     };
   }
+  const newTree = [...tree];
   replaceNode({
-    tree,
+    tree: newTree,
     replaceAtPath,
     replacement
   });
-  return tree;
+  return newTree;
 }
 
 export const reducer = (state: State, action: Action): State => {
@@ -233,6 +235,9 @@ export const reducer = (state: State, action: Action): State => {
     }
     case ActionType.RemoveNode: {
       logger.debug("Removing node in layout.");
+      logger.error("Modified using non-pure reducer. Expect problems!");
+      // FIXME removeNode() is not a pure function because it modifies the tree argument directly
+      // reducers must be pure functions 
       removeNode({tree: state, removeAtPath: action.removeAtPath});
       return [...state];
     }
