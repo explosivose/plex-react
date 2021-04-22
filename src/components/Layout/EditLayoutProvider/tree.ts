@@ -82,7 +82,11 @@ export const removeNode = ({
 }: RemoveNodeOptions): LayoutTree => {
   logger.debug('removeNode', tree, removeAtPath);
   if (removeAtPath.length === 1) {
-    return tree.splice(removeAtPath[0], 1);
+    // assign undefined to remove
+    // do not splice or remove entries because this will upset the
+    // order of nodes in the tree
+    tree[removeAtPath[0]] = undefined;
+    return tree;
   } else {
     const nextNode = tree[removeAtPath[0]];
     if (nextNode?.childNodes) {
