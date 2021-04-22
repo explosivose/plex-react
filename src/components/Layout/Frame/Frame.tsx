@@ -1,7 +1,7 @@
 
 import { Box, BoxProps, forwardRef, Heading } from "@chakra-ui/react";
 import React, {  useContext } from "react";
-import { EditLayoutContext } from "../EditLayoutProvider";
+import { EditLayoutContext, useLayoutNode } from "../EditLayoutProvider";
 import { LayoutNodeProps } from "../Layout";
 import { SplitDirection } from "../ResizableSplit";
 import { FrameEditMenu } from "./FrameEditMenu";
@@ -28,6 +28,7 @@ export const Frame = forwardRef<FrameProps, "div">(({
 }, ref) => {
 
   const [, [editModeEnabled]] = useContext(EditLayoutContext);
+  const childNode = useLayoutNode(layoutPath ?? []);
 
   let width: string | undefined;
   let height: string | undefined;
@@ -51,8 +52,10 @@ export const Frame = forwardRef<FrameProps, "div">(({
         padding={4}
         {...boxProps}
       >
-        <Heading size="md">
-          "Content Name"
+        <Heading size="md" textColor="GrayText">
+          {childNode
+            ? childNode.componentName
+            : "Add content to frame..."}
         </Heading>
         <FrameEditMenu
           onRemove={onRemove} 
