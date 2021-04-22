@@ -1,6 +1,6 @@
 import logdown from "logdown";
 import { generate as createId } from "short-uuid";
-import { LayoutNode, LayoutTree } from "../Layout";
+import { LayoutNode, LayoutTree, Serializable } from "../Layout";
 import { isComponentRegistered } from "../layoutRegistry";
 import { Action, ActionType } from "./actions"
 import { LayoutComponent } from "./EditLayoutProvider";
@@ -143,6 +143,7 @@ interface ReplaceNodeWithComponent {
   tree: Readonly<LayoutTree>;
   replaceAtPath: number[];
   replacementName: string;
+  replacementProps?: Record<string, Serializable>;
   replacementId?: number | string;
   /**
    * Reattach the replaced node as a child of the replacement node at index.
@@ -159,6 +160,7 @@ const replaceNodeWithComponent = ({
   tree,
   replaceAtPath,
   replacementName,
+  replacementProps,
   replacementId,
   adoptChildNodes,
   reattachAsChild
@@ -175,6 +177,7 @@ const replaceNodeWithComponent = ({
     replacement = {
       id: replacementId ?? `${replacementName}-${createId()}`,
       componentName: replacementName,
+      componentProps: replacementProps,
     };
   } else {
     let childNodes: LayoutTree | undefined;
@@ -198,6 +201,7 @@ const replaceNodeWithComponent = ({
     replacement = {
       id: replacementId ?? `${replacementName}-${createId()}`,
       componentName: replacementName,
+      componentProps: replacementProps,
       childNodes
     };
   }
@@ -228,6 +232,7 @@ export const reducer = (state: State, action: Action): State => {
         tree: state,
         replaceAtPath: action.replaceAtPath,
         replacementName: action.replacementName,
+        replacementProps: action.replacementProps,
         replacementId: action.replacementId,
         adoptChildNodes: action.adoptChildNodes,
         reattachAsChild: action.reattachAsChild

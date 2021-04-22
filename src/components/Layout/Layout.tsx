@@ -1,13 +1,14 @@
 import { Box } from "@chakra-ui/react";
 import logdown from "logdown";
 import React, { ComponentProps, ComponentType, FC, useContext, useMemo } from "react";
+import { generate as createId } from "short-uuid";
 import { EditLayoutContext, isLayoutComponent } from "./EditLayoutProvider";
 import { Frame } from "./Frame";
 import { getComponentFromRegister } from "./layoutRegistry";
 
 const logger = logdown('layout/layout');
 
-type Serializable = string | number | boolean | undefined;
+export type Serializable = string | number | boolean | undefined;
 type ExtractByType<T, U> = {
   [P in keyof T]: Extract<T[P], U>
 }
@@ -35,18 +36,26 @@ interface ConcreteLayoutNode {
   Component: ComponentType<unknown>;
   componentPath: number[];
   componentProps?: Record<string, Serializable>;
-  childNodes?: (ConcreteLayoutNode | undefined)[]; 
+  childNodes?: (ConcreteLayoutNode)[]; 
 }
 
-export type ConcreteLayoutTree = (ConcreteLayoutNode | undefined)[];
+export type ConcreteLayoutTree = (ConcreteLayoutNode)[];
 
 const getConcreteLayout = (nodes: LayoutTree, path: number[]): ConcreteLayoutTree => {
   return nodes.map((node, i) => {
+    const componentPath = path.concat(i);
     if (node === undefined) {
-      return undefined;
+      // undefined nodes are placeholders in the tree
+      // for example, ResizableSplit.childNodes = [undefined, Content]
+      // frameTwo of ResizableSplit could be initialised before frameOne
+      return {
+        id: createId(),
+        componentName: "undefined-placeholder",
+        Component: () => <div />,
+        componentPath
+      };
     }
     const { id, componentName, componentProps, childNodes } = node;
-    const componentPath = path.concat(i);
     logger.debug(id, componentName, componentPath);
     return {
       id,
@@ -64,21 +73,19 @@ const renderNodes = (nodes: ConcreteLayoutTree, parentIsLayoutComponent?: boolea
     return null;
   }
   return nodes.map((node) => {
-    if (node === undefined) {
-      return null;
-    }
     const { Component, componentName, id, childNodes, componentPath, componentProps } = node;  
     if (Component === null) {
       return null;
     }
     const isLeaf = (n: ConcreteLayoutNode) => n.childNodes === undefined;
     const nodeIsLeaf = isLeaf(node);
-    // 'why not assign isLayoutComponent to a variable?'
+    // 'why not assign result of  isLayoutComponent() to a variable?'
     // because the compiler doesn't infer the type with this typeguard unless it is inside the if-statement
     if (isLayoutComponent(Component, componentName)) {
       logger.debug(`layout create layoutComponent ${id} (${componentName}, editable=${nodeIsLeaf})`);
       return (
         <Component
+          {...componentProps}
           key={id}
           layoutPath={componentPath} 
           editable={nodeIsLeaf}
@@ -93,7 +100,7 @@ const renderNodes = (nodes: ConcreteLayoutTree, parentIsLayoutComponent?: boolea
     } else if (parentIsLayoutComponent) {
       logger.debug(`layout create content ${id} (${componentName}, editable=${nodeIsLeaf})`);
       return (
-        <Component key={id}>
+        <Component {...componentProps} key={id}>
           {childNodes && renderNodes(childNodes, /*isLayoutComponent=*/ false)}
         </Component>
       );

@@ -1,3 +1,5 @@
+import { Serializable } from "../Layout";
+
 export enum ActionType {
   SetEditMode = "setEditMode",
   ToggleEditMode = "toggleEditMode",
@@ -19,6 +21,7 @@ export type ReplaceNodeWithPathAction = ActionBase<ActionType.ReplaceNodeWithPat
 export type ReplaceNodeWithComponentAction = ActionBase<ActionType.ReplaceNodeWithComponent> & {
   replaceAtPath: number[];
   replacementName: string;
+  replacementProps?: Record<string, Serializable>;
   replacementId?: number | string;
   /**
    * If true, adopt the childNodes from the replaced node.
