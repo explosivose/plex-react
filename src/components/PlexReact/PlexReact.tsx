@@ -9,16 +9,19 @@ import { PlexReactConfigProvider } from './PlexReactConfigProvider/PlexReactConf
 import { registerComponent } from '../Layout/layoutRegistry';
 import { Navbar } from './Navbar/Navbar';
 import { EditLayoutProvider, LayoutComponent } from '../Layout/EditLayoutProvider';
+import { MusicLibrary } from './MusicLibrary/MusicLibrary';
 
 const queryClient = new QueryClient();
 
 export enum PlexComponent {
   SettingsForm = "SettingsForm",
   PlexReactTest = "PlexReactTest",
+  MusicLibrary = "MusicLibrary",
 }
 
 registerComponent(SettingsForm, PlexComponent.SettingsForm);
 registerComponent(PlexReactTest, PlexComponent.PlexReactTest);
+registerComponent(MusicLibrary, PlexComponent.MusicLibrary);
 
 const defaultLayout: LayoutNode[] = [{
   componentName: LayoutComponent.ResizableSplit,
@@ -30,7 +33,7 @@ const defaultLayout: LayoutNode[] = [{
     componentName: PlexComponent.SettingsForm,
     id: "settingsForm"
   }, {
-    componentName: PlexComponent.PlexReactTest,
+    componentName: PlexComponent.MusicLibrary,
     id: "plexReactTest"
   }]
 }];

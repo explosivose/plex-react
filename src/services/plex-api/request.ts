@@ -25,7 +25,7 @@ export const plexRequest = <T>({
   clientId = Constants.CLIENT_ID,
   version = Constants.VERSION,
   method = 'GET',
-  endpoint = '/'
+  endpoint = '/',
 }: PlexRequestOptions): Promise<AxiosResponse<T>> => {
   logger.debug('Dispatching request to ', apiUrl, endpoint);
   return axios.request<T>({
@@ -40,7 +40,29 @@ export const plexRequest = <T>({
       'X-Plex-Token': authToken,
     }
   });
-  
+}
+
+export const plexRequestBuffer = <T>({
+  authToken = 'unknown',
+  apiUrl = PlexApi.BASE_URL,
+  product = Constants.PRODUCT,
+  clientId = Constants.CLIENT_ID,
+  version = Constants.VERSION,
+  method = 'GET',
+  endpoint = '/'
+}: PlexRequestOptions): Promise<AxiosResponse<T>> => {
+  return axios.request<T>({
+    method,
+    baseURL: apiUrl,
+    url: endpoint,
+    responseType: 'arraybuffer',
+    headers: {
+      'X-Plex-Product': product,
+      'X-Plex-Version': version,
+      'X-Plex-Client-Identifier': clientId,
+      'X-Plex-Token': authToken,
+    }
+  })
 }
 
 export const plexQueryFn = <T>(
@@ -48,3 +70,9 @@ export const plexQueryFn = <T>(
 ): Promise<AxiosResponse<T>> => {
   return plexRequest(queryKey[1]);
 };
+
+export const plexQueryFnBuffer = <T>(
+  {queryKey}: QueryFunctionContext<[string, PlexRequestOptions]>
+): Promise<AxiosResponse<T>> => {
+  return plexRequestBuffer(queryKey[1]);
+}
