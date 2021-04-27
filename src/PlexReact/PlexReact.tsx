@@ -5,13 +5,13 @@ import { PlexAuthProvider } from './context/PlexAuthProvider/PlexAuthProvider';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { PlexReactConfigProvider } from './context/PlexReactConfigProvider/PlexReactConfigProvider';
 import { Navbar } from './components/Navbar/Navbar';
-import { MusicLibrary } from './components/MusicLibrary/MusicLibrary';
 import { Layout } from '../Layout/Layout';
 import { LayoutNode, SimpleProps } from '../Layout/services/tree';
 import { ResizableSplit, SplitDirection } from '../Layout/components/ResizableSplit';
 import { LayoutComponent } from '../Layout/services/layoutComponent.enum';
 import { EditLayoutProvider } from '../Layout/context/EditLayoutProvider';
 import { registerComponent } from '../Layout/services/layoutRegistry';
+import { PlexMusicLibraryGrid } from './components/PlexMusicLibraryGrid/PlexMusicLibraryGrid';
 
 const queryClient = new QueryClient();
 
@@ -23,7 +23,7 @@ export enum PlexComponent {
 
 registerComponent(SettingsForm, PlexComponent.SettingsForm);
 registerComponent(PlexReactTest, PlexComponent.PlexReactTest);
-registerComponent(MusicLibrary, PlexComponent.MusicLibrary);
+registerComponent(PlexMusicLibraryGrid, PlexComponent.MusicLibrary);
 
 const defaultLayout: LayoutNode[] = [{
   componentName: LayoutComponent.ResizableSplit,

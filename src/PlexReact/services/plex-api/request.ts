@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, Method } from "axios";
+import axios, { Method, ResponseType } from "axios";
 import { Constants, PlexApi } from "../../config";
 import logdown from "logdown";
 import { QueryFunctionContext } from "react-query";
@@ -14,11 +14,12 @@ export interface PlexRequestOptions extends PlexBaseOptions {
   endpoint?: string;
   version?: string;
   method?: Method;
+  responseType?: ResponseType;
 }
 
 const logger = logdown('plex-react:plex-api/request');
 
-export const plexRequest = <T>({
+export const plexRequest = async <T>({
   authToken = 'unknown',
   apiUrl = PlexApi.BASE_URL,
   product = Constants.PRODUCT,
@@ -26,12 +27,14 @@ export const plexRequest = <T>({
   version = Constants.VERSION,
   method = 'GET',
   endpoint = '/',
-}: PlexRequestOptions): Promise<AxiosResponse<T>> => {
+  responseType,
+}: PlexRequestOptions): Promise<T> => {
   logger.debug('Dispatching request to ', apiUrl, endpoint);
-  return axios.request<T>({
+  const { status, statusText, data } = await axios.request<T>({
     method,
     baseURL: apiUrl,
     url: endpoint,
+    responseType,
     headers: {
       'Accept': 'application/json',
       'X-Plex-Product': product,
@@ -40,39 +43,16 @@ export const plexRequest = <T>({
       'X-Plex-Token': authToken,
     }
   });
-}
-
-export const plexRequestBuffer = <T>({
-  authToken = 'unknown',
-  apiUrl = PlexApi.BASE_URL,
-  product = Constants.PRODUCT,
-  clientId = Constants.CLIENT_ID,
-  version = Constants.VERSION,
-  method = 'GET',
-  endpoint = '/'
-}: PlexRequestOptions): Promise<AxiosResponse<T>> => {
-  return axios.request<T>({
-    method,
-    baseURL: apiUrl,
-    url: endpoint,
-    responseType: 'arraybuffer',
-    headers: {
-      'X-Plex-Product': product,
-      'X-Plex-Version': version,
-      'X-Plex-Client-Identifier': clientId,
-      'X-Plex-Token': authToken,
-    }
-  })
-}
+  switch (status) {
+    case 200:
+      return data;
+    default:
+      throw new Error(`(${status}, ${statusText}) Error making ${method} request to Plex ${endpoint}`);
+  }
+};
 
 export const plexQueryFn = <T>(
   {queryKey}: QueryFunctionContext<[string, PlexRequestOptions]>
-): Promise<AxiosResponse<T>> => {
+): Promise<T> => {
   return plexRequest(queryKey[1]);
 };
-
-export const plexQueryFnBuffer = <T>(
-  {queryKey}: QueryFunctionContext<[string, PlexRequestOptions]>
-): Promise<AxiosResponse<T>> => {
-  return plexRequestBuffer(queryKey[1]);
-}

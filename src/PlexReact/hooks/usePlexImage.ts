@@ -1,12 +1,11 @@
-import { AxiosResponse } from "axios";
 import { useContext, useEffect, useState } from "react"
 import { 
   useQuery } from "react-query";
-import { plexQueryFnBuffer, PlexRequestOptions } from "../services/plex-api";
+import { plexQueryFn, PlexRequestOptions } from "../services/plex-api";
 import { PlexAuthContext } from "../context/PlexAuthProvider/PlexAuthProvider"
 import { PlexReactConfigContext } from "../context/PlexReactConfigProvider";
 
-type ImageResponse = AxiosResponse<ArrayBuffer>;
+type ImageResponse = ArrayBuffer;
 
 interface PlexImageOptions {
   imageUrl?: string;
@@ -30,14 +29,15 @@ export const usePlexImage = ({
     'image', {
       authToken,
       apiUrl: plexUrl,
-      endpoint: fetchUrl
+      endpoint: fetchUrl,
+      responseType: 'arraybuffer',
     }],
-    plexQueryFnBuffer, {
+    plexQueryFn, {
       enabled: imageUrl !== undefined
   });
 
-  const [objectUrl, setObjectUrl] = useState(imageResponse?.data
-    ? URL.createObjectURL(new Blob([imageResponse.data]))
+  const [objectUrl, setObjectUrl] = useState(imageResponse
+    ? URL.createObjectURL(new Blob([imageResponse]))
     : undefined);
 
   useEffect(() => {
@@ -45,11 +45,11 @@ export const usePlexImage = ({
       if (oldUrl) {
         URL.revokeObjectURL(oldUrl);
       }
-      return imageResponse?.data
-        ? URL.createObjectURL(new Blob([imageResponse.data]))
+      return imageResponse
+        ? URL.createObjectURL(new Blob([imageResponse]))
         : undefined;
     });
-  }, [imageResponse?.data]);
+  }, [imageResponse]);
 
   useEffect(() => {
     return () => {
