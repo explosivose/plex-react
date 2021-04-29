@@ -1,5 +1,6 @@
 import logdown from "logdown";
 import { ComponentType } from "react";
+import { LayoutComponent } from "./layoutComponent.enum";
 
 const logger = logdown('layout/registry');
 
@@ -34,3 +35,13 @@ export const getComponentFromRegister = <C extends ComponentType = ComponentType
   }
   return register[componentName] as RegisteredComponent<C, K>;
 };
+
+export const getRegisteredNames = (): string[] => {
+  return Object.keys(register);
+}
+
+export const getUserRegisteredNames = (): string[] => {
+  return getRegisteredNames().filter(name =>
+    name !== LayoutComponent.Frame &&
+    name !== LayoutComponent.ResizableSplit);
+}

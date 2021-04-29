@@ -1,11 +1,19 @@
 
-import { Button, Center, Stack } from "@chakra-ui/react";
-import { CloseIcon, DragHandleIcon } from "@chakra-ui/icons";
-import React, { FC, useCallback, useContext } from "react";
+import { Button, ButtonGroup, Center, Spacer, Stack } from "@chakra-ui/react";
+import {
+  AddIcon,
+  ChevronDownIcon, 
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+  CloseIcon
+ } from "@chakra-ui/icons";
+import React, { FC, useCallback, useContext, useState } from "react";
 import { ActionType, EditLayoutContext } from "../../context/EditLayoutProvider";
 import { ResizableSplit, SplitDirection } from "../ResizableSplit";
 import { SimpleProps } from "../../services/tree";
 import { LayoutComponent } from "../../services/layoutComponent.enum";
+import { getUserRegisteredNames } from "../../services/layoutRegistry";
 
 interface Props {
   onRemove?: () => void;
@@ -15,6 +23,7 @@ interface Props {
 export const FrameEditMenu: FC<Props> = ({onRemove, layoutPath}) => {
 
   const [editLayout] = useContext(EditLayoutContext);
+  const [userComponents] = useState(getUserRegisteredNames());
 
   const addSplit = useCallback((splitDirection = SplitDirection.Vertical, splitPosition: 0 | 1 = 0) => {
     if (layoutPath) {
@@ -46,24 +55,43 @@ export const FrameEditMenu: FC<Props> = ({onRemove, layoutPath}) => {
     addSplit(SplitDirection.Horizontal, 1);
   }, [addSplit]);
 
+  const addComponent = useCallback((componentName: string) => {
+    if (layoutPath) {
+      editLayout({
+        type: ActionType.ReplaceNodeWithComponent,
+        replaceAtPath: layoutPath,
+        replacementName: componentName,
+      });
+    }
+  }, [editLayout, layoutPath]);
+
+
+
   return (
     <Center height="80%">
       <Stack bg="gray.500" padding={10} rounded={10}>
-        <Button leftIcon={<CloseIcon />} onClick={onRemove}>
-          Remove Frame
-        </Button>
-        <Button leftIcon={<DragHandleIcon />} onClick={splitLeft}>
-          Split Left
-        </Button>
-        <Button leftIcon={<DragHandleIcon />} onClick={splitRight}>
-          Split Right
-        </Button>
-        <Button leftIcon={<DragHandleIcon />} onClick={splitUp}>
-          Split Up
-        </Button>
-        <Button leftIcon={<DragHandleIcon />} onClick={splitDown}>
-          Split Down
-        </Button>
+        <Stack>
+          <Button leftIcon={<CloseIcon />} onClick={onRemove}>
+            Remove Frame
+          </Button>
+          <ButtonGroup isAttached>
+            <Button rightIcon={<ChevronLeftIcon />} onClick={splitLeft} />
+            <Button leftIcon={<ChevronUpIcon />} onClick={splitUp} />
+            <Button>
+              Split
+            </Button>
+            <Button leftIcon={<ChevronDownIcon />} onClick={splitDown} />
+            <Button leftIcon={<ChevronRightIcon />} onClick={splitRight} />
+          </ButtonGroup>
+        </Stack>
+        <Spacer />
+        <Stack overflowY="auto">
+          {userComponents.map(componentName => (
+            <Button leftIcon={<AddIcon />} onClick={() => addComponent(componentName)}>
+              Add {componentName}
+            </Button>
+          ))}
+        </Stack>
       </Stack>
     </Center>
   )
