@@ -1,10 +1,10 @@
 import { Box, Spinner } from "@chakra-ui/react";
-import { AxiosError, AxiosResponse } from "axios";
+import { AxiosError } from "axios";
 import React, { FC } from "react";
 import { useQuery } from "react-query";
 import { plexQueryFn, PlexRequestOptions } from "../../../services/plex-api";
 import { AxiosErrorViewer } from "../AxiosErrorViewer/AxiosErrorViewer";
-import { AxiosResponseViewer } from "../AxiosResponseViewer/AxiosResponseViewer";
+import { ResponseViewer } from "../ResponseViewer/ResponseViewer";
 
 interface Props {
   authToken: string;
@@ -22,7 +22,7 @@ export const PlexReactTestDispatch: FC <Props> = ({
     isLoading, 
     isError,
     error
-  } = useQuery<AxiosResponse, unknown, AxiosResponse, [string, PlexRequestOptions]>(['testDispatch', {
+  } = useQuery<unknown, unknown, unknown, [string, PlexRequestOptions]>(['testDispatch', {
     authToken,
     apiUrl,
     endpoint,
@@ -37,7 +37,7 @@ export const PlexReactTestDispatch: FC <Props> = ({
             <AxiosErrorViewer error={error as AxiosError} />
           </Box>
           : <Box>
-            {data && <AxiosResponseViewer data={data} />}
+            {data !== undefined ? <ResponseViewer data={data} /> : null}
           </Box>}
     </Box>
   );
