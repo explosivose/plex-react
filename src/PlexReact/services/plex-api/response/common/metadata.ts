@@ -2,6 +2,7 @@ import { AudioMedia, VideoMedia } from "./media";
 
 export enum MetadataType {
   Album = "album",
+  Artist = "artist",
   Episode = "episode",
   Film = "film",
   Playlist = "playlist",
@@ -12,22 +13,24 @@ export enum MetadataType {
 
 export type Metadata =
   AlbumMetadata |
+  ArtistMetadata |
   EpisodeMetadata |
   FilmMetadata |
   PlaylistMetadata |
   SeasonMetadata |
+  ShowMetadata |
   TrackMetadata;
 
 export interface BaseMetadata<E = MetadataType> {
-  type: E;
-  addedAt: number;
-  duration: number;
-  guid: string;
+  type?: E;
+  addedAt?: number;
+  duration?: number;
+  guid?: string;
   key: string;
-  ratingKey: string;
-  summary: string;
-  title: string;
-  updatedAt: number;
+  ratingKey?: string;
+  summary?: string;
+  title?: string;
+  updatedAt?: number;
   allowSync?: boolean;
   art?: string;
   banner?: string;
@@ -49,9 +52,9 @@ export interface ParentMetadata {
 }
 
 export interface ChildMetadata {
-  parentKey: string;
-  parentRatingKey: string;
-  parentTitle: string;
+  parentKey?: string;
+  parentRatingKey?: string;
+  parentTitle?: string;
   parentGuid?: string;
   parentIndex?: number;
   parentSummary?: string;
@@ -61,9 +64,9 @@ export interface ChildMetadata {
 }
 
 export interface GrandchildMetadata {
-  grandparentKey: string;
-  grandparentRatingKey: string;
-  grandparentTitle: string;
+  grandparentKey?: string;
+  grandparentRatingKey?: string;
+  grandparentTitle?: string;
   grandparentArt?: string;
   grandparentGuid?: string;
   grandparentTheme?: string; 
@@ -71,12 +74,12 @@ export interface GrandchildMetadata {
 }
 
 export interface FilmMetadata extends BaseMetadata<MetadataType.Film> {
-  contentRating: string;
-  librarySectionID: number;
-  librarySectionTitle: string;
-  originallyAvailableAt: string;
-  studio: string;
-  year: number;
+  contentRating?: string;
+  librarySectionID?: number;
+  librarySectionTitle?: string;
+  originallyAvailableAt?: string;
+  studio?: string;
+  year?: number;
   audienceRating?: number;
   audienceRatingImage?: string;
   chapterSource?: string;
@@ -85,7 +88,7 @@ export interface FilmMetadata extends BaseMetadata<MetadataType.Film> {
   primaryExtraKey?: string;
   ratingImage?: string;
   tagline?: string;
-  Media: VideoMedia[];
+  Media?: VideoMedia[];
   Country?: Tag[];
   Director?: Tag[];
   Genre?: Tag[];
@@ -94,10 +97,11 @@ export interface FilmMetadata extends BaseMetadata<MetadataType.Film> {
 }
 
 export interface ShowMetadata extends BaseMetadata<MetadataType.Show>, ParentMetadata {
-  studio: string;
-  librarySectionID: number;
-  librarySectionTitle: string;
-  librarySectionKey: string;
+  studio?: string;
+  librarySectionID?: number;
+  librarySectionTitle?: string;
+  librarySectionKey?: string;
+  year?: number;
   Genre?: Tag[];
   Role?: Tag[];
   Similar?: Tag[];
@@ -105,58 +109,66 @@ export interface ShowMetadata extends BaseMetadata<MetadataType.Show>, ParentMet
 }
 
 export interface SeasonMetadata extends BaseMetadata<MetadataType.Season>, ChildMetadata, GrandchildMetadata, ParentMetadata {
-  contentRating: string;
-  index: number;
-  leafCount: number;
-  librarySectionID: number;
-  librarySectionKey: string;
-  librarySectionTitle: string;
+  contentRating?: string;
+  index?: number;
+  leafCount?: number;
+  librarySectionID?: number;
+  librarySectionKey?: string;
+  librarySectionTitle?: string;
   librarySectionUUID?: string;
-  originallyAvailableAt: string;
-  year: number;
-  Media: VideoMedia[];
-  Writer: Tag[];
+  originallyAvailableAt?: string;
+  year?: number;
+  Media?: VideoMedia[];
+  Writer?: Tag[];
 }
 
 export interface EpisodeMetadata extends BaseMetadata<MetadataType.Episode>, ChildMetadata, GrandchildMetadata {
-  contentRating: string;
-  index: number;
-  librarySectionID: number;
-  librarySectionKey: string;
-  librarySectionTitle: string;
-  originallyAvailableAt: string;
-  year: number;
-  Media: VideoMedia[];
+  contentRating?: string;
+  index?: number;
+  librarySectionID?: number;
+  librarySectionKey?: string;
+  librarySectionTitle?: string;
+  originallyAvailableAt?: string;
+  year?: number;
+  Media?: VideoMedia[];
 }
 
 export interface PlaylistMetadata extends BaseMetadata<MetadataType.Playlist>, ParentMetadata {
-  composite: string;
-  leafCount: number;
-  playlistType: string;
-  smart: boolean;
+  composite?: string;
+  leafCount?: number;
+  playlistType?: string;
+  smart?: boolean;
+}
+
+export interface ArtistMetadata extends BaseMetadata<MetadataType.Artist>, ParentMetadata {
+  Genre?: Tag[];
+  Country?: Tag[];
+  Style?: Tag[];
+  Mood?: Tag[];
+  Location?: Tag[];
 }
 
 export interface AlbumMetadata extends BaseMetadata<MetadataType.Album>, ChildMetadata, ParentMetadata {
-  index: number;
-  librarySectionID: number;
-  librarySectionKey: string;
-  librarySectionTitle: string;
+  index?: number;
+  librarySectionID?: number;
+  librarySectionKey?: string;
+  librarySectionTitle?: string;
   librarySectionUUID?: string;
-  loudnessAnalysisVersion: string;
-  originallyAvailableAt: string;
-  year: number;
+  loudnessAnalysisVersion?: string;
+  originallyAvailableAt?: string;
+  year?: number;
   Director?: Tag[];
   Genre?: Tag[];
 }
 
 export interface TrackMetadata extends BaseMetadata<MetadataType.Track>, ChildMetadata, GrandchildMetadata {
-  Media: AudioMedia[];
+  Media?: AudioMedia[];
 }
 
 export interface Tag {
   filter?: string;
   id?: number;
-  tag: string;
+  tag?: string;
   role?: string;
   thumb?: string;
 }

@@ -12,18 +12,22 @@ import { LayoutComponent } from '../Layout/services/layoutComponent.enum';
 import { EditLayoutProvider } from '../Layout/context/EditLayoutProvider';
 import { registerComponent } from '../Layout/services/layoutRegistry';
 import { PlexMusicLibraryGrid } from './components/PlexMusicLibraryGrid/PlexMusicLibraryGrid';
+import { SelectionContextProvider } from './context/SelectionProvider/SelectionProvider';
+import { SelectionViewer } from './components/SelectionViewer/SelectionViewer';
 
 const queryClient = new QueryClient();
 
 export enum PlexComponent {
   SettingsForm = "SettingsForm",
   PlexReactTest = "PlexReactTest",
-  MusicLibrary = "MusicLibrary",
+  MusicLibraryGrid = "MusicLibraryGrid",
+  SelectionViewer = "SelectionViewer",
 }
 
 registerComponent(SettingsForm, PlexComponent.SettingsForm);
 registerComponent(PlexReactTest, PlexComponent.PlexReactTest);
-registerComponent(PlexMusicLibraryGrid, PlexComponent.MusicLibrary);
+registerComponent(PlexMusicLibraryGrid, PlexComponent.MusicLibraryGrid);
+registerComponent(SelectionViewer, PlexComponent.SelectionViewer)
 
 const defaultLayout: LayoutNode[] = [{
   componentName: LayoutComponent.ResizableSplit,
@@ -35,7 +39,7 @@ const defaultLayout: LayoutNode[] = [{
     componentName: PlexComponent.SettingsForm,
     id: "settingsForm"
   }, {
-    componentName: PlexComponent.MusicLibrary,
+    componentName: PlexComponent.MusicLibraryGrid,
     id: "plexReactTest"
   }]
 }];
@@ -46,10 +50,12 @@ export const PlexReact: FC = () => {
     <QueryClientProvider client={queryClient}>
     <PlexAuthProvider>
     <PlexReactConfigProvider>
+    <SelectionContextProvider>
     <EditLayoutProvider initialLayout={defaultLayout}>
       <Navbar />
       <Layout />
     </EditLayoutProvider>
+    </SelectionContextProvider>
     </PlexReactConfigProvider>
     </PlexAuthProvider>
     </QueryClientProvider>

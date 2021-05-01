@@ -2,6 +2,7 @@ import { Spinner } from "@chakra-ui/react";
 import { FC } from "react";
 import { usePlexData } from "../../hooks/usePlexData";
 import { AlbumsContainer } from "../../services/plex-api/response/library/sections/music";
+import { convertAlbum } from "../../services/plex-response-ingest";
 import { LibraryGrid } from "../LibraryGrid/LibraryGrid";
 
 // TODO traverse API to find music library section
@@ -27,7 +28,7 @@ export const PlexMusicLibraryGrid: FC = () => {
 
   return (
     <LibraryGrid
-      library={library}
+      library={library.map(album => convertAlbum(album))}
     />
   )
 };

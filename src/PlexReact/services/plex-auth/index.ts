@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Constants, PlexApi } from "../../config";
 import { stringify } from "qs";
-import { PlexBaseOptions } from "./request";
+import { PlexBaseOptions } from "../plex-api/request";
 
 export interface PlexVerifyOptions extends PlexBaseOptions {
   userToken: string;

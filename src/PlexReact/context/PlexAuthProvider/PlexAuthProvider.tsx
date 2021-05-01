@@ -12,7 +12,7 @@ import {
   getAuthUrl,
   poll,
   verifyToken
-} from '../../services/plex-api';
+} from '../../services/plex-auth';
 
 const logger = logdown('plex-react:plex-auth-provider');
 
