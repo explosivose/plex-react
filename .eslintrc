@@ -2,8 +2,12 @@
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
+    "plugin:react-hooks/recommended",
     "react-app",
     "prettier",
     "prettier/@typescript-eslint"
-  ]
+  ],
+  "rules": {
+    "max-len": ["warn", {"code": 120}]
+  }
 }
